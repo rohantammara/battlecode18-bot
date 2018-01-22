@@ -9,15 +9,13 @@ print(os.getcwd())
 print("Test starting")
 
 gc = bc.GameController()
-# Initializing code
-directions = [bc.Direction.Center, bc.Direction.North, bc.Direction.Northeast,
-            bc.Direction.East, bc.Direction.Southeast, bc.Direction.South,
-            bc.Direction.Southwest, bc.Direction.West, bc.Direction.Northwest]
-tryRotate = [0,-1,1,-2,2]
-mining = True
+directions = [bc.Direction.North, bc.Direction.Northeast, bc.Direction.East,
+              bc.Direction.Southeast, bc.Direction.South, bc.Direction.Southwest,
+              bc.Direction.West, bc.Direction.Northwest]
+tryRotate = [0,-1,-7,-2,-6,-3,-5]
+mining =  True
 corpus = []
-prev_dir = directions[0]
-earthMap = gc.starting_map(bc.Planet.Earth)
+blocked =  {}
 
 print("TestStarter")
 
@@ -28,37 +26,32 @@ gc.queue_research(bc.UnitType.Rocket)
 gc.queue_research(bc.UnitType.Mage)
 gc.queue_research(bc.UnitType.Knight)
 
+
 my_team = gc.team()
 print(my_team)
 
-def Karbonite_Mining(id,directions,prev_dir,unit):
+def Karbonite_Mining(id,directions,unit,mining):
     karbonite_collected = False
-    for d in directions:
+    for d in list(bc.Direction):
         if gc.can_harvest(id, d):
             gc.harvest(id, d)
-            prev_dir = d
             karbonite_collected = False
             break
         else:
             karbonite_collected = True
 
     if  karbonite_collected == True and gc.is_move_ready(id):
-        for loc in gc.all_locations_within(location.map_location(),5):
-            if gc.karbonite_at(loc) != 0:
-                mining = True
-                fuzzygoto(unit,loc)
+        for i  in [1,2,3,4]:
+            for loc in gc.all_locations_within(location.map_location(),5*i):
+                if gc.karbonite_at(loc) != 0:
+                    mining = True
+                    fuzzygoto(unit,loc)
+                    break
+                else:
+                    mining = False
+            if mining ==True:
                 break
-            else:
-                mining = False
-
-        for loc in gc.all_locations_within(location.map_location(),10):
-            if gc.karbonite_at(loc) != 0:
-                mining = True
-                fuzzygoto(unit,loc)
-                break
-            else:
-                mining = False
-    return (prev_dir)
+    return (mining)
 
 def rotate(dir,amount):
     ind = directions.index(dir)
@@ -68,9 +61,57 @@ def fuzzygoto(unit,dest):
     toward = unit.location.map_location().direction_to(dest)
     for tilt in  tryRotate:
         d = rotate(toward,tilt)
-        if gc.can_move(unit.id,d):
-            gc.move_robot(unit.id,d)
-            break
+        if unit.id not in blocked.keys():
+             if d == bc.Direction.North:
+                 blocked[unit.id] = [bc.Direction.South,bc.Direction.Southeast,bc.Direction.Southwest]
+             elif d == bc.Direction.Northeast:
+                 blocked[unit.id] = [bc.Direction.Southwest,bc.Direction.South,bc.Direction.West]
+             elif d == bc.Direction.East:
+                 blocked[unit.id] = [bc.Direction.West,bc.Direction.Southwest,bc.Direction.Northwest]
+             elif d == bc.Direction.Southeast:
+                 blocked[unit.id] = [bc.Direction.Northwest,bc.Direction.North,bc.Direction.West]
+             elif d == bc.Direction.South:
+                 blocked[unit.id] = [bc.Direction.North,bc.Direction.Northeast,bc.Direction.Northwest]
+             elif d == bc.Direction.Southwest:
+                 blocked[unit.id] = [bc.Direction.Northeast,bc.Direction.North,bc.Direction.East]
+             elif d == bc.Direction.West:
+                 blocked[unit.id] = [bc.Direction.East,bc.Direction.Northeast,bc.Direction.Southeast]
+             elif d == bc.Direction.Northwest:
+                 blocked[unit.id] = [bc.Direction.Southeast,bc.Direction.South,bc.Direction.East]
+
+        else:
+            for values in blocked[unit.id]:
+                if values == d:
+                    stinky = True
+                    break
+                else:
+                    stinky = False
+            if stinky == False:
+                if gc.can_move(unit.id,d):
+                    gc.move_robot(unit.id,d)
+                    break
+        print(blocked[unit.id])
+        print("d: ", d)
+
+    if d == bc.Direction.North:
+        blocked[unit.id] = [bc.Direction.South,bc.Direction.Southeast,bc.Direction.Southwest]
+    elif d == bc.Direction.Northeast:
+        blocked[unit.id] = [bc.Direction.Southwest,bc.Direction.South,bc.Direction.West]
+    elif d == bc.Direction.East:
+        blocked[unit.id] = [bc.Direction.West,bc.Direction.Southwest,bc.Direction.Northwest]
+    elif d == bc.Direction.Southeast:
+        blocked[unit.id] = [bc.Direction.Northwest,bc.Direction.North,bc.Direction.West]
+    elif d == bc.Direction.South:
+        blocked[unit.id] = [bc.Direction.North,bc.Direction.Northeast,bc.Direction.Northwest]
+    elif d == bc.Direction.Southwest:
+        blocked[unit.id] = [bc.Direction.Northeast,bc.Direction.North,bc.Direction.East]
+    elif d == bc.Direction.West:
+        blocked[unit.id] = [bc.Direction.East,bc.Direction.Northeast,bc.Direction.Southeast]
+    elif d == bc.Direction.Northwest:
+        blocked[unit.id] = [bc.Direction.Southeast,bc.Direction.South,bc.Direction.East]
+
+earthMap =  gc.starting_map(bc.Planet.Earth)
+dest = bc.MapLocation(bc.Planet.Earth,(earthMap.width) - 3,(earthMap.height)-3)
 
 while True:
     print('pyround:', gc.round())
@@ -79,28 +120,25 @@ while True:
 
         for unit in gc.my_units():
             location = unit.location
-            # Mining
-            if unit.unit_type == bc.UnitType.Worker:
-                if unit.id not in corpus:
+## Mining
+            if unit.unit_type == bc.UnitType.Worker :
+                if not unit.id in corpus:
                     corpus.append(unit.id)
-                if mining is True:
-                    prev_dir = Karbonite_Mining(unit.id, directions, prev_dir, unit)
-                    for loc in gc.all_locations_within(location.map_location(), 9):
-                        if gc.karbonite_at(loc) != 0:
-                            mining = True
-                            break
-                        else:
-                            mining = False
-                    if mining is False:
+                if(mining==True):
+                    mining = Karbonite_Mining(unit.id,directions,unit,mining)
+
+                    if mining == False:
                         corpus.remove(unit.id)
                         if len(corpus) == 0:
                             mining = False
                         else:
                             mining = True
-                # Path finding
-                if mining is False:
-                    dest = bc.MapLocation(bc.Planet.Earth, earthMap.width, earthMap.height)
-                    fuzzygoto(unit, dest)
+## This if condition only works if worker has done nothing this round.. Put suitable code here!!
+            if mining ==False:
+                if(unit.location.map_location().direction_to(dest)!=bc.Direction.Center):
+                    blocked.clear()
+                    fuzzygoto(unit,dest)
+
     except Exception as e:
         print('Error:', e)
         # use this to show where the error was
