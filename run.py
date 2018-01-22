@@ -61,25 +61,26 @@ def fuzzygoto(unit,dest):
     toward = unit.location.map_location().direction_to(dest)
     for tilt in  tryRotate:
         d = rotate(toward,tilt)
-        if unit.id not in blocked.keys():
-             if d == bc.Direction.North:
-                 blocked[unit.id] = [bc.Direction.South,bc.Direction.Southeast,bc.Direction.Southwest]
-             elif d == bc.Direction.Northeast:
-                 blocked[unit.id] = [bc.Direction.Southwest,bc.Direction.South,bc.Direction.West]
-             elif d == bc.Direction.East:
-                 blocked[unit.id] = [bc.Direction.West,bc.Direction.Southwest,bc.Direction.Northwest]
-             elif d == bc.Direction.Southeast:
-                 blocked[unit.id] = [bc.Direction.Northwest,bc.Direction.North,bc.Direction.West]
-             elif d == bc.Direction.South:
-                 blocked[unit.id] = [bc.Direction.North,bc.Direction.Northeast,bc.Direction.Northwest]
-             elif d == bc.Direction.Southwest:
-                 blocked[unit.id] = [bc.Direction.Northeast,bc.Direction.North,bc.Direction.East]
-             elif d == bc.Direction.West:
-                 blocked[unit.id] = [bc.Direction.East,bc.Direction.Northeast,bc.Direction.Southeast]
-             elif d == bc.Direction.Northwest:
-                 blocked[unit.id] = [bc.Direction.Southeast,bc.Direction.South,bc.Direction.East]
+        if gc.can_move(unit.id,d):
+            print(d)
+            if unit.id not in blocked.keys():
+                 if d == bc.Direction.North:
+                     blocked[unit.id] = [bc.Direction.South,bc.Direction.Southeast,bc.Direction.Southwest]
+                 elif d == bc.Direction.Northeast:
+                     blocked[unit.id] = [bc.Direction.Southwest,bc.Direction.South,bc.Direction.West]
+                 elif d == bc.Direction.East:
+                     blocked[unit.id] = [bc.Direction.West,bc.Direction.Southwest,bc.Direction.Northwest]
+                 elif d == bc.Direction.Southeast:
+                     blocked[unit.id] = [bc.Direction.Northwest,bc.Direction.North,bc.Direction.West]
+                 elif d == bc.Direction.South:
+                     blocked[unit.id] = [bc.Direction.North,bc.Direction.Northeast,bc.Direction.Northwest]
+                 elif d == bc.Direction.Southwest:
+                     blocked[unit.id] = [bc.Direction.Northeast,bc.Direction.North,bc.Direction.East]
+                 elif d == bc.Direction.West:
+                     blocked[unit.id] = [bc.Direction.East,bc.Direction.Northeast,bc.Direction.Southeast]
+                 elif d == bc.Direction.Northwest:
+                     blocked[unit.id] = [bc.Direction.Southeast,bc.Direction.South,bc.Direction.East]
 
-        else:
             for values in blocked[unit.id]:
                 if values == d:
                     stinky = True
@@ -87,11 +88,9 @@ def fuzzygoto(unit,dest):
                 else:
                     stinky = False
             if stinky == False:
-                if gc.can_move(unit.id,d):
-                    gc.move_robot(unit.id,d)
-                    break
-        print(blocked[unit.id])
-        print("d: ", d)
+                gc.move_robot(unit.id,d)
+                print("final: ",d)
+                break
 
     if d == bc.Direction.North:
         blocked[unit.id] = [bc.Direction.South,bc.Direction.Southeast,bc.Direction.Southwest]
