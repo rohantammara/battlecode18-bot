@@ -99,8 +99,18 @@ while True:
                             mining = True
                 # Path finding
                 if mining is False:
-                    dest = bc.MapLocation(bc.Planet.Earth, earthMap.width, earthMap.height)
+                    dest = location.map_location() #bc.MapLocation(bc.Planet.Earth, earthMap.width, earthMap.height)
                     fuzzygoto(unit, dest)
+                    # Blueprint and build
+                    d = random.choice(directions[1:])
+                    if gc.karbonite() > bc.UnitType.Factory.blueprint_cost() and gc.can_blueprint(unit.id, bc.UnitType.Factory, d):
+                        gc.blueprint(unit.id, bc.UnitType.Factory, d)
+                    if location.is_on_map():
+                        nearby = gc.sense_nearby_units(location.map_location(), 2)
+                        for other in nearby:
+                            if unit.unit_type == bc.UnitType.Worker and gc.can_build(unit.id, other.id):
+                                gc.build(unit.id, other.id)
+                        break
     except Exception as e:
         print('Error:', e)
         # use this to show where the error was
