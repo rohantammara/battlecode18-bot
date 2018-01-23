@@ -86,10 +86,10 @@ def fuzzygoto(unit,dest):
             gc.move_robot(unit.id,d)
             break
 
-def lay_blueprint(unit):
+def lay_blueprint(worker_id):
     for d in directions:
-        if gc.can_blueprint(unit.id, bc.UnitType.Factory, d):
-            gc.blueprint(unit.id, bc.UnitType.Factory, d)
+        if gc.can_blueprint(worker_id, bc.UnitType.Factory, d):
+            gc.blueprint(worker_id, bc.UnitType.Factory, d)
         else:
             continue
 
