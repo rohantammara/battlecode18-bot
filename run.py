@@ -19,8 +19,9 @@ born_to_build = []
 blocked =  {}
 workers = []
 dukan = []
-temp = []
 blueprint_number=0
+legion_of_knights=[]
+amadhya=[]
 
 print("TestStarter")
 factory_number=0
@@ -35,6 +36,10 @@ gc.queue_research(bc.UnitType.Knight)
 my_team = gc.team()
 print(my_team)
 
+def invert(loc):
+    newx=earthMap.width-loc.x
+    newy=earthMap.height-loc.y
+    return bc.MapLocation(bc.Planet.Earth,newx,newy)
 def lay_blueprint(worker_id):
     for d in [bc.Direction.Northeast,bc.Direction.Northwest,bc.Direction.Southeast,bc.Direction.Southwest]:
         if  gc.can_blueprint(worker_id , bc.UnitType.Factory ,d):
@@ -120,11 +125,6 @@ def fuzzygoto(unit,dest):
         blocked[unit.id] = [bc.Direction.Southeast,bc.Direction.South,bc.Direction.East]
 
 earthMap =  gc.starting_map(bc.Planet.Earth)
-corner1= bc.MapLocation(bc.Planet.Earth,(earthMap.width),(earthMap.height))
-corner2= bc.MapLocation(bc.Planet.Earth,0,(earthMap.height))
-corner3= bc.MapLocation(bc.Planet.Earth,(earthMap.width),0)
-corner4= bc.MapLocation(bc.Planet.Earth,0,0)
-corners = [corner1,corner2,corner3,corner4]
 while True:
     print('pyround:', gc.round())
 
@@ -133,6 +133,8 @@ while True:
             location = unit.location
 
             if gc.round()==1:
+                start_Node=location.map_location()
+                enemy_start=invert(start_Node)
                 born_to_mine.append(unit.id)
                 for d in directions:
                     if gc.can_replicate(unit.id,d):
@@ -147,7 +149,9 @@ while True:
 
             if unit.id not in workers:
                 workers.append(unit.id)
+
             if unit.unit_type == bc.UnitType.Worker :
+
 # Append in Born_to_mine
                 if not unit.id in born_to_mine and not unit.id in born_to_build:
                     born_to_mine.append(unit.id)
@@ -172,41 +176,64 @@ while True:
                     for other in nearby:
                         if other.unit_type == bc.UnitType.Factory:
                             if other.structure_is_built() and not other.id in dukan:
-                                print("structure is built")
-                                temp.append(other.id)
+                                continue
                             elif gc.can_build(unit.id,other.id):
                                 gc.build(unit.id, other.id)
                             elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
                                  gc.repair(unit.id,other.id)
-                    if gc.karbonite() >200 and gc.round()%20==0:
+                    if gc.karbonite() >200:
                         lay_blueprint(unit.id)
-                    dukan.append(temp)
-                    temp.clear()
+## SHREY'S CODE AFTER THIS!
+            if unit.unit_type == bc.UnitType.Factory :
+                garrison = unit.structure_garrison()
+                if len(garrison)>0:
+                    for d in directions:
+                        if gc.can_unload(unit.id,d):
+                            gc.unload(unit.id,d)
 
-                if unit.unit_type == bc.UnitType.Factory :
-                    garrison = unit.structure_garrison()
-                    if len(garrison)>0:
-                        for d in directions:
-                            if gc.can_unload(unit.id,d):
-                                print("unloaded something")
-                                gc.unload(unit.id,d)
-                                continue
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Knight) and len(legion_of_knights)<5:
+                    gc.produce_robot(unit.id, bc.UnitType.Knight)
+                    print('produced a knight!')
 
-                    elif gc.can_produce_robot(unit.id, bc.UnitType.Knight):
-                        gc.produce_robot(unit.id, bc.UnitType.Knight)
-                        print('produced a knight!')
-                        continue
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger) and len(amadhya)<5:
+                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                        print('produced a ranger!')
 
-                if  unit.unit_type == bc.UnitType.Knight :
-                    close_by=gc.sense_nearby_units(unit.map_location(),30)
+            if  unit.unit_type == bc.UnitType.Knight :
+
+                if not unit.id in legion_of_knights:
+                    legion_of_knights.append(unit.id)
+
+                if location.is_on_map():
+                    close_by = gc.sense_nearby_units(location.map_location(),2)
                     for enemy in close_by:
-                        if enemy.team !=my_team and gc.is_attack_ready(unit.id) and gc.can_attack(unit.id,enemy.id):
+                        if enemy.team != my_team and gc.is_attack_ready(unit.id) and gc.can_attack(unit.id,enemy.id) :
                             print("attacking a thing")
-                            gc.attack(unit.id,other.id)
-                            continue
+                            gc.attack(unit.id,enemy.id)
+                            break
                         else:
-                            if (location.map_location().direction_to(centre) != bc.Direction.Center):
-                                fuzzygoto(unit,centre)
+                            continue
+                    if gc.is_move_ready(unit.id) and location.map_location().direction_to(enemy_start)!= bc.Direction.Center:
+                        fuzzygoto(unit,enemy_start)
+
+            if  unit.unit_type == bc.UnitType.Ranger :
+
+                if not unit.id in amadhya:
+                    amadhya.append(unit.id)
+
+
+                if location.is_on_map():
+                    close_by_for_ranger= gc.sense_nearby_units(location.map_location(),50)
+                    for junta in close_by_for_ranger:
+                        if junta.team !=my_team and  gc.is_attack_ready(unit.id) and gc.can_attack(unit.id,junta.id) :
+                            print("attacking a thing")
+                            gc.attack(unit.id,junta.id)
+                            break
+                        else:
+                            continue
+
+                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(enemy_start)!= bc.Direction.Center :
+                            fuzzygoto(unit,enemy_start)
     except Exception as e:
         print('Error:', e)
         # use this to show where the error was
