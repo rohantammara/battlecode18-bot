@@ -139,22 +139,22 @@ while True:
                             if bc.Unit.structure_is_built(other):
                                 print("built a factory")
 
-                            elif gc.can_repair(unit.id,other.id) and (other.health < other.max_health):# and bc.Unit.worker_has_acted()==False:
-                                gc.repair(unit.id,other.id)
-                                print("repaired a factory")
-                                continue
-                            elif gc.karbonite()>200 and len(dukan)<5 and gc.round()%20==0:
-                                lay_blueprint(unit.id)
+                        elif gc.can_repair(unit.id,other.id) and (other.health < other.max_health):# and bc.Unit.worker_has_acted()==False:
+                            gc.repair(unit.id,other.id)
+                            print("repaired a factory")
+                            continue
+                        elif gc.karbonite()>200 and len(dukan)<5 and gc.round()%20==0:
+                            lay_blueprint(unit.id)
 
-                            else:
-                                direction_to_start_node=unit.location.map_location().direction_to(centre)
-                                ind_for_this=directions.index(direction_to_start_node)
-                                i=0
-                                for tilt in  tryRotate:
-                                    d = rotate(directions[ind_for_this - 4],tilt)
-                                    if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
-                                        gc.move_robot(unit.id,d)
-                                        break
+                        else:
+                            direction_to_start_node=unit.location.map_location().direction_to(centre)
+                            ind_for_this=directions.index(direction_to_start_node)
+                            i=0
+                            for tilt in  tryRotate:
+                                d = rotate(directions[ind_for_this - 4],tilt)
+                                if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
+                                    gc.move_robot(unit.id,d)
+                                    break
             ### Factory Output ###
             if unit.unit_type == bc.UnitType.Factory:
                 if not unit.id in dukan:
