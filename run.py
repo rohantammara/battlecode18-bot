@@ -14,11 +14,12 @@ directions = [bc.Direction.North, bc.Direction.Northeast, bc.Direction.East,
               bc.Direction.West, bc.Direction.Northwest]
 tryRotate = [0,-1,-7,-2,-6,-3,-5]
 mining =  True
-corpus = []
+born_to_mine = []
+born_to_build = []
 blocked =  {}
-miners=0
-worker_number=0
-global blueprint_number
+workers = []
+dukan = []
+temp = []
 blueprint_number=0
 
 print("TestStarter")
@@ -31,18 +32,16 @@ gc.queue_research(bc.UnitType.Rocket)
 gc.queue_research(bc.UnitType.Mage)
 gc.queue_research(bc.UnitType.Knight)
 
-
 my_team = gc.team()
 print(my_team)
 
 def lay_blueprint(worker_id):
-    for d in directions:
+    for d in [bc.Direction.Northeast,bc.Direction.Northwest,bc.Direction.Southeast,bc.Direction.Southwest]:
         if  gc.can_blueprint(worker_id , bc.UnitType.Factory ,d):
             gc.blueprint(worker_id, bc.UnitType.Factory ,d)
-            blueprint_number+=1
+            break
         else:
             continue
-
 def Karbonite_Mining(id,directions,unit,mining):
     karbonite_collected = False
     for d in list(bc.Direction):
@@ -54,7 +53,7 @@ def Karbonite_Mining(id,directions,unit,mining):
             karbonite_collected = True
 
     if  karbonite_collected == True and gc.is_move_ready(id):
-        for i  in [1,2,3,4]:
+        for i in [1,2,3,4,5]:
             for loc in gc.all_locations_within(location.map_location(),5*i):
                 if gc.karbonite_at(loc) != 0:
                     mining = True
@@ -65,11 +64,9 @@ def Karbonite_Mining(id,directions,unit,mining):
             if mining ==True:
                 break
     return (mining)
-
 def rotate(dir,amount):
     ind = directions.index(dir)
     return directions[(ind+amount)]
-
 def fuzzygoto(unit,dest):
     toward = unit.location.map_location().direction_to(dest)
     for tilt in  tryRotate:
@@ -123,96 +120,93 @@ def fuzzygoto(unit,dest):
         blocked[unit.id] = [bc.Direction.Southeast,bc.Direction.South,bc.Direction.East]
 
 earthMap =  gc.starting_map(bc.Planet.Earth)
-centre= bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height)//2)
-
+corner1= bc.MapLocation(bc.Planet.Earth,(earthMap.width),(earthMap.height))
+corner2= bc.MapLocation(bc.Planet.Earth,0,(earthMap.height))
+corner3= bc.MapLocation(bc.Planet.Earth,(earthMap.width),0)
+corner4= bc.MapLocation(bc.Planet.Earth,0,0)
+corners = [corner1,corner2,corner3,corner4]
 while True:
     print('pyround:', gc.round())
 
     try:
-
         for unit in gc.my_units():
             location = unit.location
-            replications=0
 
             if gc.round()==1:
-                start_Node=location.map_location()
-## Mining
+                born_to_mine.append(unit.id)
+                for d in directions:
+                    if gc.can_replicate(unit.id,d):
+                        gc.replicate(unit.id,d)
+                    else:
+                        continue
+
+            elif gc.round() ==2:
+                if unit.id not in born_to_mine:
+                    born_to_build.append(unit.id)
+# Append workers
+
+            if unit.id not in workers:
+                workers.append(unit.id)
             if unit.unit_type == bc.UnitType.Worker :
+# Append in Born_to_mine
+                if not unit.id in born_to_mine and not unit.id in born_to_build:
+                    born_to_mine.append(unit.id)
 
-                if replications<3 and gc.karbonite()>70 and worker_number<10 and (gc.round())%15==0:
-                    for d in directions:
-                        if gc.can_replicate(unit.id,d):
-                            gc.replicate(unit.id,d)
-                            replications+=1
-                            worker_number+=1
-                        else:
-                            continue
-
-                if not unit.id in corpus and miners<4:
-                    corpus.append(unit.id)
-                    miners+=1
-
-                if(mining==True):
+# Workers in Born_to_mine
+                if unit.id in born_to_mine:
                     mining = Karbonite_Mining(unit.id,directions,unit,mining)
-
                     if mining == False:
-                        corpus.remove(unit.id)
-                        miners-=1
-                        if len(corpus) == 0:
-                            mining = False
-                        else:
-                            mining = True
-## This if condition only works if worker has done nothing this round.. Put suitable code here!!
-            if not unit.id in corpus:
+                            born_to_mine.remove(unit.id)
+                            if len(born_to_mine) == 0:
+                                mining = False
+                            else:
+                                mining = True
+
+# Workers in Born_to_build
+                else:
+                    for d in list(bc.Direction):
+                        if gc.can_harvest(unit.id, d):
+                            gc.harvest(unit.id, d)
+                            break
                     nearby = gc.sense_nearby_units(location.map_location(), 2)
                     for other in nearby:
-                            if blueprint_number>2 and gc.can_build(unit.id,other.id):
+                        if other.unit_type == bc.UnitType.Factory:
+                            if other.structure_is_built() and not other.id in dukan:
+                                print("structure is built")
+                                temp.append(other.id)
+                            elif gc.can_build(unit.id,other.id):
                                 gc.build(unit.id, other.id)
-                                if bc.Unit.structure_is_built(other):
-                                    print("built a factory")
-                                    blueprint_number-=1
-                            elif   gc.can_repair(unit.id,other.id):
+                            elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
                                  gc.repair(unit.id,other.id)
-                                 print("repaired a factory")
-                                 continue
-                            elif gc.karbonite()>200 and factory_number<5 and gc.round()%20==0:
-                                lay_blueprint(unit.id)
+                    if gc.karbonite() >200 and gc.round()%20==0:
+                        lay_blueprint(unit.id)
+                    dukan.append(temp)
+                    temp.clear()
 
-                            else:
-                                direction_to_start_node=unit.location.map_location().direction_to(centre)
-                                ind_for_this=directions.index(direction_to_start_node)
-                                i=0
-                                for tilt in  tryRotate:
-                                    d = rotate(directions[ind_for_this - 4],tilt)
-                                    if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
-                                        gc.move_robot(unit.id,d)
-                                        break
+                if unit.unit_type == bc.UnitType.Factory :
+                    garrison = unit.structure_garrison()
+                    if len(garrison)>0:
+                        for d in directions:
+                            if gc.can_unload(unit.id,d):
+                                print("unloaded something")
+                                gc.unload(unit.id,d)
+                                continue
 
-            if unit.unit_type == bc.UnitType.Factory :
-                garrison = unit.structure_garrison()
-                if len(garrison)>0:
-                    for d in directions:
-                        if gc.can_unload(unit.id,d):
-                            print("unloaded something")
-                            gc.unload(unit.id,d)
-                            continue
-
-                elif gc.can_produce_robot(unit.id, bc.UnitType.Knight):
-                    gc.produce_robot(unit.id, bc.UnitType.Knight)
-                    print('produced a knight!')
-                    continue
-
-            if  unit.unit_type == bc.UnitType.Knight :
-                close_by=gc.sense_nearby_units(unit.map_location(),30)
-                for enemy in close_by:
-                    if enemy.team !=my_team and gc.is_attack_ready(unit.id) and gc.can_attack(unit.id,enemy.id):
-                        print("attacking a thing")
-                        gc.attack(unit.id,other.id)
+                    elif gc.can_produce_robot(unit.id, bc.UnitType.Knight):
+                        gc.produce_robot(unit.id, bc.UnitType.Knight)
+                        print('produced a knight!')
                         continue
-                    else:
-                        if (location.map_location().direction_to(centre) != bc.Direction.Center):
-                            fuzzygoto(unit,centre)
 
+                if  unit.unit_type == bc.UnitType.Knight :
+                    close_by=gc.sense_nearby_units(unit.map_location(),30)
+                    for enemy in close_by:
+                        if enemy.team !=my_team and gc.is_attack_ready(unit.id) and gc.can_attack(unit.id,enemy.id):
+                            print("attacking a thing")
+                            gc.attack(unit.id,other.id)
+                            continue
+                        else:
+                            if (location.map_location().direction_to(centre) != bc.Direction.Center):
+                                fuzzygoto(unit,centre)
     except Exception as e:
         print('Error:', e)
         # use this to show where the error was
