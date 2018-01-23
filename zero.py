@@ -20,6 +20,7 @@ directions = [bc.Direction.North, bc.Direction.Northeast,
 tryRotate = [0,-1,-7,-2,-6]
 mining = True # Should the worker mine
 corpus = []
+blocked = {}
 miners = 0
 prev_dir = bc.Direction.Center
 earthMap = gc.starting_map(bc.Planet.Earth)
@@ -77,14 +78,40 @@ def Karbonite_Mining(id,directions,prev_dir,unit):
 def rotate(dir,amount):
     ind = directions.index(dir)
     return directions[(ind+amount)]
-# Pathfinding
+# Path finding
 def fuzzygoto(unit,dest):
     toward = unit.location.map_location().direction_to(dest)
     for tilt in  tryRotate:
         d = rotate(toward,tilt)
         if gc.can_move(unit.id,d):
-            gc.move_robot(unit.id,d)
-            break
+            if unit.id not in blocked.keys():
+                if d == bc.Direction.North:
+                    blocked[unit.id] = [bc.Direction.South,bc.Direction.Southeast,bc.Direction.Southwest]
+                elif d == bc.Direction.Northeast:
+                    blocked[unit.id] = [bc.Direction.Southwest,bc.Direction.South,bc.Direction.West]
+                elif d == bc.Direction.East:
+                    blocked[unit.id] = [bc.Direction.West,bc.Direction.Southwest,bc.Direction.Northwest]
+                elif d == bc.Direction.Southeast:
+                     blocked[unit.id] = [bc.Direction.Northwest,bc.Direction.North,bc.Direction.West]
+                elif d == bc.Direction.South:
+                    blocked[unit.id] = [bc.Direction.North,bc.Direction.Northeast,bc.Direction.Northwest]
+                elif d == bc.Direction.Southwest:
+                    blocked[unit.id] = [bc.Direction.Northeast,bc.Direction.North,bc.Direction.East]
+                elif d == bc.Direction.West:
+                    blocked[unit.id] = [bc.Direction.East,bc.Direction.Northeast,bc.Direction.Southeast]
+                elif d == bc.Direction.Northwest:
+                    blocked[unit.id] = [bc.Direction.Southeast,bc.Direction.South,bc.Direction.East]
+                else:
+                    continue
+            for values in blocked[unit.id]:
+                if values == d:
+                    stinky = True
+                    break
+                else:
+                    stinky = False
+            if stinky == False:
+                gc.move_robot(unit.id,d)
+                break
 
 def lay_blueprint(worker_id):
     for d in directions:
