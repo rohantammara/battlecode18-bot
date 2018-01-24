@@ -30,6 +30,7 @@ dukan = []
 amadhya = []
 knights = []
 mages = []
+pants = []
 the_lone_ranger = []
 the_neighborhood_watch = []
 steps_north = 0
@@ -154,7 +155,7 @@ while True:
                 if not unit.id in miners and not unit.id in builders:
                     miners.append(unit.id)
 
-                if len(workers) < 10 and (gc.round())%5 == 0: # continue replication till sufficient
+                if len(workers) < 20 and (gc.round())%5 == 0: # continue replication till sufficient
                     for d in directions:
                         if gc.can_replicate(unit.id,d):
                             gc.replicate(unit.id,d)
@@ -174,25 +175,46 @@ while True:
                                 for tilt in  tryRotate:
                                     d = rotate(directions[ind_for_this - 4],tilt)
                                     if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
-                                        gc.move_robot(unit.id,d)
-                                        break
+                                        if location.map_location().y != 0:
+                                            gc.move_robot(unit.id,d)
+                                            break
                 else:
                     for d in all_map_directions:
                         if gc.can_harvest(unit.id, d):
                             gc.harvest(unit.id, d)
                             break
                     # blueprint and build
-                    nearby = gc.sense_nearby_units(location.map_location(), 2)
-                    for other in nearby:
-                        if other.unit_type == bc.UnitType.Factory:
-                            if other.structure_is_built() and not other.id in dukan:
-                                continue
-                            elif gc.can_build(unit.id,other.id):
-                                gc.build(unit.id, other.id)
-                            elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
-                                 gc.repair(unit.id,other.id)
-                    if gc.karbonite() > 200 and len(dukan)<10:
-                        lay_blueprint(unit.id, bc.UnitType.Factory)
+                    if location.is_on_map():
+                        nearby = gc.sense_nearby_units(location.map_location(), 2)
+                        for other in nearby:
+                            if other.unit_type == bc.UnitType.Factory:
+                                if other.structure_is_built() and not other.id in dukan:
+                                    continue
+                                elif gc.can_build(unit.id,other.id):
+                                    gc.build(unit.id, other.id)
+                                elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
+                                     gc.repair(unit.id,other.id)
+                            if other.unit_type == bc.UnitType.Rocket:
+                                if other.structure_is_built() and not other.id in pants:
+                                    continue
+                                elif gc.can_build(unit.id, other.id):
+                                    gc.build(unit.id, other.id)
+                        if gc.karbonite() > 100 and len(pants)<4:
+                            lay_blueprint(unit.id, bc.UnitType.Rocket)
+                        if gc.karbonite() > 200 and len(dukan)<8:
+                            lay_blueprint(unit.id, bc.UnitType.Factory)
+            ### Rocket Science ###
+            if unit.unit_type == bc.UnitType.Rocket:
+                if not unit.id in pants:
+                    pants.append(unit.id)
+
+                garrison = unit.structure_garrison()
+                if len(garrison) == 0:
+                    nearby = gc.sense_nearby_units(location.map_location(),2)
+                    for robot in nearby:
+                        if gc.is_move_ready(robot.id) and gc.can_load(unit.id, robot.id):
+                            gc.load(unit.id, robot.id)
+                            print('unit has been loaded!')
             ### Factory Output ###
             if unit.unit_type == bc.UnitType.Factory:
                 if not unit.id in dukan:
@@ -204,21 +226,26 @@ while True:
                         if gc.can_unload(unit.id,d):
                             gc.unload(unit.id,d)
 
-                elif gc.can_produce_robot(unit.id, bc.UnitType.Knight) and len(knights)<5 and (enemy_sensed==True or got_to_enemy_start==True):
-                    gc.produce_robot(unit.id, bc.UnitType.Knight)
-                    print('produced a knight!')
+                else:
+                    if gc.can_produce_robot(unit.id, bc.UnitType.Knight):
+                        if len(knights)<5 and (enemy_sensed==False or got_to_enemy_start==False):
+                            gc.produce_robot(unit.id, bc.UnitType.Knight)
+                            print('produced a knight!')
+                        elif (enemy_sensed==True or got_to_enemy_start==True) and len(knights)<10:
+                            gc.produce_robot(unit.id, bc.UnitType.Knight)
+                            print('produced a knight!')
 
-                elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):
-                    if (enemy_sensed==False and got_to_enemy_start==False) and len(amadhya)<5:
-                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
-                        print('produced a ranger!')
-                    elif (enemy_sensed==True or got_to_enemy_start==True) and len(amadhya)<7:
-                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
-                        print('produced a ranger!')
+                        if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):
+                            if (enemy_sensed==False and got_to_enemy_start==False) and len(amadhya)<5:
+                                gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                                print('produced a ranger!')
+                            elif (enemy_sensed==True or got_to_enemy_start==True) and len(amadhya)<7:
+                                gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                                print('produced a ranger!')
 
-                elif gc.can_produce_robot(unit.id, bc.UnitType.Mage) and len(mages)<4:
-                    gc.produce_robot(unit.id, bc.UnitType.Mage)
-                    print('produced a mage!')
+                        if gc.can_produce_robot(unit.id, bc.UnitType.Mage) and len(mages)<4:
+                            gc.produce_robot(unit.id, bc.UnitType.Mage)
+                            print('produced a mage!')
             ### Knights ###
             if  unit.unit_type == bc.UnitType.Knight :
                 if not unit.id in knights:
