@@ -39,6 +39,7 @@ steps_west = 0
 steps_south = 0
 prev_dir = bc.Direction.Center
 earthMap = gc.starting_map(bc.Planet.Earth)
+marsMap = gc.starting_map(bc.Planet.Mars)
 centre = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height)//2)
 enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height))
 #print("TestStarter")
@@ -71,7 +72,7 @@ def Karbonite_Mining(id,directions,unit,mining):
 
     if  karbonite_collected == True and gc.is_move_ready(id):
         for i in [5,10,17,26,37,50]:
-            for loc in gc.all_locations_within(location.map_location(),5):
+            for loc in gc.all_locations_within(location.map_location(),i):
                 if gc.karbonite_at(loc) != 0:
                     mining = True
                     fuzzygoto(unit,loc)
@@ -215,6 +216,10 @@ while True:
                         if gc.is_move_ready(robot.id) and gc.can_load(unit.id, robot.id):
                             gc.load(unit.id, robot.id)
                             print('unit has been loaded!')
+                elif len(garrison) !=0 and gc.current_duration_of_flight()<60:
+                    for land in marsMap:
+                        if marsMap.is_passable_terrain_at(land) and marsMap.on_map(land):
+                            if gc.can_launch_rocket(unit.id, land)
             ### Factory Output ###
             if unit.unit_type == bc.UnitType.Factory:
                 if not unit.id in dukan:
@@ -227,14 +232,6 @@ while True:
                             gc.unload(unit.id,d)
 
                 else:
-                    if gc.can_produce_robot(unit.id, bc.UnitType.Knight):
-                        if len(knights)<5 and (enemy_sensed==False or got_to_enemy_start==False):
-                            gc.produce_robot(unit.id, bc.UnitType.Knight)
-                            print('produced a knight!')
-                        elif (enemy_sensed==True or got_to_enemy_start==True) and len(knights)<10:
-                            gc.produce_robot(unit.id, bc.UnitType.Knight)
-                            print('produced a knight!')
-
                         if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):
                             if (enemy_sensed==False and got_to_enemy_start==False) and len(amadhya)<5:
                                 gc.produce_robot(unit.id, bc.UnitType.Ranger)
@@ -246,6 +243,14 @@ while True:
                         if gc.can_produce_robot(unit.id, bc.UnitType.Mage) and len(mages)<4:
                             gc.produce_robot(unit.id, bc.UnitType.Mage)
                             print('produced a mage!')
+
+                        if gc.can_produce_robot(unit.id, bc.UnitType.Knight):
+                            if len(knights)<5 and (enemy_sensed==False or got_to_enemy_start==False):
+                                gc.produce_robot(unit.id, bc.UnitType.Knight)
+                                print('produced a knight!')
+                            elif (enemy_sensed==True or got_to_enemy_start==True) and len(knights)<10:
+                                gc.produce_robot(unit.id, bc.UnitType.Knight)
+                                print('produced a knight!')
             ### Knights ###
             if  unit.unit_type == bc.UnitType.Knight :
                 if not unit.id in knights:
