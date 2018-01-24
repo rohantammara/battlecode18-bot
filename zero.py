@@ -216,10 +216,10 @@ while True:
                         if gc.is_move_ready(robot.id) and gc.can_load(unit.id, robot.id):
                             gc.load(unit.id, robot.id)
                             print('unit has been loaded!')
-                elif len(garrison) !=0 and gc.current_duration_of_flight()<60:
-                    for land in marsMap:
-                        if marsMap.is_passable_terrain_at(land) and marsMap.on_map(land):
-                            if gc.can_launch_rocket(unit.id, land)
+                #elif len(garrison) !=0 and gc.current_duration_of_flight()<60:
+                #    for land in marsMap:
+                #        if marsMap.is_passable_terrain_at(land) and marsMap.on_map(land):
+                #            if gc.can_launch_rocket(unit.id, land):
             ### Factory Output ###
             if unit.unit_type == bc.UnitType.Factory:
                 if not unit.id in dukan:
