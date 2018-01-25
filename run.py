@@ -14,6 +14,9 @@ directions = [bc.Direction.North, bc.Direction.Northeast, bc.Direction.East,
               bc.Direction.West, bc.Direction.Northwest]
 tryRotate = [0,-1,-7,-2,-6,-3,-5]
 #variablles for workers
+earthMap =  gc.starting_map(bc.Planet.Earth)
+centre= bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height)//2)
+
 mining =  True
 enemy_sensed=False
 born_to_mine = []
@@ -28,8 +31,12 @@ amadhya=[]
 the_lone_ranger=[]
 got_to_enemy_start=False
 the_neighborhood_watch=[]
-
-
+mages=[]
+pants=[]
+maploc=[]
+mars_maploc=[]
+marsMap = gc.starting_map(bc.Planet.Mars)
+enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height))
 print("TestStarter")
 factory_number=0
 
@@ -109,11 +116,10 @@ def invert(loc):
     newy=earthMap.height-loc.y
     return bc.MapLocation(bc.Planet.Earth,newx,newy)
 
-def lay_blueprint(worker_id):
-    for d in [bc.Direction.Northeast,bc.Direction.Northwest,bc.Direction.Southeast,bc.Direction.Southwest]:
-        if  gc.can_blueprint(worker_id , bc.UnitType.Factory ,d):
-            gc.blueprint(worker_id, bc.UnitType.Factory ,d)
-            break
+def lay_blueprint(worker_id, structure):
+    for d in [directions[1], directions[3], directions[5],directions[7]]:
+        if gc.can_blueprint(worker_id, structure, d):
+            gc.blueprint(worker_id, structure, d)
         else:
             continue
 
@@ -197,8 +203,6 @@ def fuzzygoto(unit,dest):
         blocked[unit.id] = [bc.Direction.Southeast,bc.Direction.South,bc.Direction.East]
 
 
-earthMap =  gc.starting_map(bc.Planet.Earth)
-centre= bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height)//2)
 
 while True:
     print('pyround:', gc.round())
@@ -216,82 +220,82 @@ while True:
 
 
             if unit.unit_type == bc.UnitType.Worker :
+                if location.is_on_map():
+                    if unit.id not in workers:
+                        workers.append(unit.id)
 
-                if unit.id not in workers:
-                    workers.append(unit.id)
-
-# Append in Born_to_mine
-                if gc.round()==1:
-                    born_to_mine.append(unit.id)
-                    for d in directions:
-                        if gc.can_replicate(unit.id,d):
-                            gc.replicate(unit.id,d)
-                        else:
-                            continue
-
-                    if start_node.y < earthMap.height//2: # find out whether in top or bottom
-                        if 'Bottom' not in maploc:
-                            maploc.append('Bottom')
-                    if start_node.y > earthMap.height//2:
-                        if 'Top' not in maploc:
-                            maploc.append('Top')
-
-                elif gc.round() ==2:
-                    if unit.id not in born_to_mine:
-                        born_to_build.append(unit.id)
-
-                    if len(maploc) == 1: # find out whether in left or right
-                        pos = print(maploc)
-                    else:
-                        if start_node.x < earthMap.width//2:
-                            pos = 'Left'
-                        else:
-                            pos = 'Right'
-
-
-
-                if not unit.id in born_to_mine and not unit.id in born_to_build:
-                    born_to_mine.append(unit.id)
-
-                if len(workers) < 20 and (gc.round())%5 == 0: # continue replication till sufficient
-                    for d in directions:
-                        if gc.can_replicate(unit.id,d):
-                            gc.replicate(unit.id,d)
-# Workers in Born_to_mine
-                if unit.id in born_to_mine:
-                    mining = Karbonite_Mining(unit.id,directions,unit,mining)
-                    if mining == False:
-                            born_to_mine.remove(unit.id)
-                            if len(born_to_mine) == 0:
-                                mining = False
+    # Append in Born_to_mine
+                    if gc.round()==1:
+                        born_to_mine.append(unit.id)
+                        for d in directions:
+                            if gc.can_replicate(unit.id,d):
+                                gc.replicate(unit.id,d)
                             else:
-                                mining = True
-
-# Workers in Born_to_build
-                else:
-                    for d in list(bc.Direction):
-                        if gc.can_harvest(unit.id, d):
-                            gc.harvest(unit.id, d)
-                            break
-                    nearby = gc.sense_nearby_units(location.map_location(), 2)
-                    for other in nearby:
-                        if other.unit_type == bc.UnitType.Factory:
-                            if other.structure_is_built() and not other.id in dukan:
                                 continue
-                            elif gc.can_build(unit.id,other.id):
-                                gc.build(unit.id, other.id)
-                            elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
-                                 gc.repair(unit.id,other.id)
 
-                        if other.unit_type == bc.UnitType.Rocket:
-                            if other.structure_is_built() and not other.id in pants:
-                                continue
-                            elif gc.can_build(unit.id, other.id):
-                                gc.build(unit.id, other.id)
-                    if gc.karbonite() > 100 and len(pants)<4:
-                        lay_blueprint(unit.id, bc.UnitType.Rocket)
-                    if gc.karbonite() > 200 and len(dukan)<8:
-                        lay_blueprint(unit.id, bc.UnitType.Factory)
+                        if start_Node.y < earthMap.height//2: # find out whether in top or bottom
+                            if 'Bottom' not in maploc:
+                                maploc.append('Bottom')
+                        if start_Node.y > earthMap.height//2:
+                            if 'Top' not in maploc:
+                                maploc.append('Top')
+
+                    elif gc.round() ==2:
+                        if unit.id not in born_to_mine:
+                            born_to_build.append(unit.id)
+
+                        if len(maploc) == 1: # find out whether in left or right
+                            pos = print(maploc)
+                        else:
+                            if start_Node.x < earthMap.width//2:
+                                pos = 'Left'
+                            else:
+                                pos = 'Right'
+
+
+
+                    if not unit.id in born_to_mine and not unit.id in born_to_build:
+                        born_to_mine.append(unit.id)
+
+                    if len(workers) < 20 and (gc.round())%5 == 0: # continue replication till sufficient
+                        for d in directions:
+                            if gc.can_replicate(unit.id,d):
+                                gc.replicate(unit.id,d)
+    # Workers in Born_to_mine
+                    if unit.id in born_to_mine:
+                        mining = Karbonite_Mining(unit.id,directions,unit,mining)
+                        if mining == False:
+                                born_to_mine.remove(unit.id)
+                                if len(born_to_mine) == 0:
+                                    mining = False
+                                else:
+                                    mining = True
+
+    # Workers in Born_to_build
+                    else:
+                        for d in list(bc.Direction):
+                            if gc.can_harvest(unit.id, d):
+                                gc.harvest(unit.id, d)
+                                break
+                        nearby = gc.sense_nearby_units(location.map_location(), 2)
+                        for other in nearby:
+                            if other.unit_type == bc.UnitType.Factory:
+                                if other.structure_is_built() and not other.id in dukan:
+                                    continue
+                                elif gc.can_build(unit.id,other.id):
+                                    gc.build(unit.id, other.id)
+                                elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
+                                     gc.repair(unit.id,other.id)
+
+                            if other.unit_type == bc.UnitType.Rocket:
+                                if other.structure_is_built() and not other.id in pants:
+                                    continue
+                                elif gc.can_build(unit.id, other.id):
+                                    gc.build(unit.id, other.id)
+                        if gc.karbonite() > 100 and len(pants)<4:
+                            lay_blueprint(unit.id, bc.UnitType.Rocket)
+                        if gc.karbonite() > 200 and len(dukan)<8:
+                            lay_blueprint(unit.id, bc.UnitType.Factory)
 
             ### Rocket Science ###
             if unit.unit_type == bc.UnitType.Rocket:
@@ -362,6 +366,7 @@ while True:
                 rangers_job(unit,got_to_enemy_start,enemy_sensed)
 
             if unit.unit_type == bc.UnitType.Mage :
+
                 if not unit.id in mages:
                     mages.append(unit.id)
                     print(len(mages))
