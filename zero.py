@@ -47,7 +47,7 @@ enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height
 #print("TestStarter")
 
 random.seed(1047)
-
+## A list of all passable locations on mars ##
 i = 0
 while i< marsMap.width:
     j=0
@@ -57,6 +57,7 @@ while i< marsMap.width:
             mars_maploc.append(loc)
         j+=1
     i+=1
+random.shuffle(mars_maploc)
 
 gc.queue_research(bc.UnitType.Rocket)
 gc.queue_research(bc.UnitType.Mage)
@@ -199,6 +200,12 @@ while True:
                 if not unit.id in miners and not unit.id in builders:
                     miners.append(unit.id)
 
+                if location.is_in_garrison():
+                    rocket_id = location.structure()
+                    for d in directions:
+                        if gc.can_unload(rocket_id,d):
+                            gc.unload(rocket_id,d)
+
                 if len(workers) < 20 and (gc.round())%5 == 0: # continue replication till sufficient
                     for d in directions:
                         if gc.can_replicate(unit.id,d):
@@ -260,10 +267,18 @@ while True:
                         if gc.is_move_ready(robot.id) and gc.can_load(unit.id, robot.id):
                             gc.load(unit.id, robot.id)
                             print('unit has been loaded!')
-                #elif len(garrison) !=0 and gc.current_duration_of_flight()<60:
-                #    for land in marsMap:
-                #        if marsMap.is_passable_terrain_at(land) and marsMap.on_map(land):
-                #            if gc.can_launch_rocket(unit.id, land):
+                elif len(garrison) != 0:
+                    if location.is_on_planet(bc.Planet.Earth) and gc.current_duration_of_flight()<100:
+                        for land in mars_maploc:
+                            if gc.has_unit_at_location(land) == False and gc.can_launch_rocket(unit.id, land):
+                                mars_maploc.remove(land)
+                                gc.launch_rocket(unit.id, land)
+                                print('a rocket has been launched!')
+                    elif location.is_on_planet(bc.Planet.Mars):
+                        print("I'm on Mars!")
+                        for d in directions:
+                            if gc.can_unload(unit.id,d):
+                                gc.unload(unit.id,d)
             ### Factory Output ###
             if unit.unit_type == bc.UnitType.Factory:
                 if not unit.id in dukan:
@@ -276,25 +291,25 @@ while True:
                             gc.unload(unit.id,d)
 
                 else:
-                        if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):
-                            if (enemy_sensed==False and got_to_enemy_start==False) and len(amadhya)<5:
-                                gc.produce_robot(unit.id, bc.UnitType.Ranger)
-                                print('produced a ranger!')
-                            elif (enemy_sensed==True or got_to_enemy_start==True) and len(amadhya)<7:
-                                gc.produce_robot(unit.id, bc.UnitType.Ranger)
-                                print('produced a ranger!')
+                    if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):
+                        if (enemy_sensed==False and got_to_enemy_start==False) and len(amadhya)<5:
+                            gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                            print('produced a ranger!')
+                        elif (enemy_sensed==True or got_to_enemy_start==True) and len(amadhya)<7:
+                            gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                            print('produced a ranger!')
 
-                        if gc.can_produce_robot(unit.id, bc.UnitType.Mage) and len(mages)<4:
-                            gc.produce_robot(unit.id, bc.UnitType.Mage)
-                            print('produced a mage!')
+                    if gc.can_produce_robot(unit.id, bc.UnitType.Mage) and len(mages)<4:
+                        gc.produce_robot(unit.id, bc.UnitType.Mage)
+                        print('produced a mage!')
 
-                        if gc.can_produce_robot(unit.id, bc.UnitType.Knight):
-                            if len(knights)<5 and (enemy_sensed==False or got_to_enemy_start==False):
-                                gc.produce_robot(unit.id, bc.UnitType.Knight)
-                                print('produced a knight!')
-                            elif (enemy_sensed==True or got_to_enemy_start==True) and len(knights)<10:
-                                gc.produce_robot(unit.id, bc.UnitType.Knight)
-                                print('produced a knight!')
+                    if gc.can_produce_robot(unit.id, bc.UnitType.Knight):
+                        if len(knights)<5 and (enemy_sensed==False or got_to_enemy_start==False):
+                            gc.produce_robot(unit.id, bc.UnitType.Knight)
+                            print('produced a knight!')
+                        elif (enemy_sensed==True or got_to_enemy_start==True) and len(knights)<10:
+                            gc.produce_robot(unit.id, bc.UnitType.Knight)
+                            print('produced a knight!')
             ### Knights ###
             if  unit.unit_type == bc.UnitType.Knight :
                 if not unit.id in knights:
