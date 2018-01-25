@@ -43,7 +43,6 @@ prev_dir = bc.Direction.Center
 earthMap = gc.starting_map(bc.Planet.Earth)
 marsMap = gc.starting_map(bc.Planet.Mars)
 centre = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height)//2)
-enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height))
 #print("TestStarter")
 
 random.seed(1047)
@@ -186,12 +185,26 @@ while True:
                     builders.append(unit.id) # new workers initialized as builders
 
                 if len(maploc) == 1: # find out whether in left or right
-                    pos = print(maploc)
+                    pos = maploc[0]
+                    print(pos)
                 else:
                     if start_node.x < earthMap.width//2:
                         pos = 'Left'
                     else:
                         pos = 'Right'
+                    print(pos)
+                if pos == 'Bottom':
+                    our_border = centre.translate(-1,0)
+                    enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height))
+                elif pos == 'Top':
+                    our_border = centre.translate(1,0)
+                    enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,0)
+                elif pos == 'Left':
+                    our_border = centre.translate(0,-1)
+                    enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width),(earthMap.height)//2)
+                elif pos == 'Right':
+                    our_border = centre.translate(0,1)
+                    enemy_edge = bc.MapLocation(bc.Planet.Earth,0,(earthMap.height)//2)
 
             if unit.id not in workers: # the workers list
                 workers.append(unit.id)
@@ -205,6 +218,7 @@ while True:
                     for d in directions:
                         if gc.can_unload(rocket_id,d):
                             gc.unload(rocket_id,d)
+                            gc.disintegrate_unit(rocket_id)
 
                 if len(workers) < 20 and (gc.round())%5 == 0: # continue replication till sufficient
                     for d in directions:
@@ -226,9 +240,29 @@ while True:
                                 for tilt in  tryRotate:
                                     d = rotate(directions[ind_for_this - 4],tilt)
                                     if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
-                                        if location.map_location().y != 0:
-                                            gc.move_robot(unit.id,d)
-                                            break
+                                        if pos == 'Top' or pos == 'Bottom':
+                                            if location.map_location().y != start_node.y:
+                                                gc.move_robot(unit.id,d)
+                                                break
+                                        elif pos == 'Left' or pos == 'Right':
+                                            if location.map_location().x != start_node.x:
+                                                gc.move_robot(unit.id,d)
+                                                break
+                                if location.is_on_map():
+                                    nearby = gc.sense_nearby_units(location.map_location(), 2)
+                                    for other in nearby:
+                                        if other.unit_type == bc.UnitType.Factory:
+                                            if other.structure_is_built() and not other.id in dukan:
+                                                continue
+                                            elif gc.can_build(unit.id,other.id):
+                                                gc.build(unit.id, other.id)
+                                            elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
+                                                 gc.repair(unit.id,other.id)
+                                        if other.unit_type == bc.UnitType.Rocket:
+                                            if other.structure_is_built() and not other.id in pants:
+                                                continue
+                                            elif gc.can_build(unit.id, other.id):
+                                                gc.build(unit.id, other.id)
                 else:
                     for d in all_map_directions:
                         if gc.can_harvest(unit.id, d):
@@ -272,6 +306,7 @@ while True:
                         for land in mars_maploc:
                             if gc.has_unit_at_location(land) == False and gc.can_launch_rocket(unit.id, land):
                                 mars_maploc.remove(land)
+                                pants.remove(unit.id)
                                 gc.launch_rocket(unit.id, land)
                                 print('a rocket has been launched!')
                     elif location.is_on_planet(bc.Planet.Mars):
