@@ -194,16 +194,16 @@ while True:
                         pos = 'Right'
                     print(pos)
                 if pos == 'Bottom':
-                    our_border = centre.translate(-1,0)
+                    our_border = centre.translate(0,-1)
                     enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height))
                 elif pos == 'Top':
-                    our_border = centre.translate(1,0)
+                    our_border = centre.translate(0,1)
                     enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,0)
                 elif pos == 'Left':
-                    our_border = centre.translate(0,-1)
+                    our_border = centre.translate(-1,0)
                     enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width),(earthMap.height)//2)
                 elif pos == 'Right':
-                    our_border = centre.translate(0,1)
+                    our_border = centre.translate(1,0)
                     enemy_edge = bc.MapLocation(bc.Planet.Earth,0,(earthMap.height)//2)
 
             if unit.id not in workers: # the workers list
@@ -241,11 +241,11 @@ while True:
                                     d = rotate(directions[ind_for_this - 4],tilt)
                                     if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
                                         if pos == 'Top' or pos == 'Bottom':
-                                            if location.map_location().y != start_node.y:
+                                            if location.map_location().y != our_border.y:
                                                 gc.move_robot(unit.id,d)
                                                 break
                                         elif pos == 'Left' or pos == 'Right':
-                                            if location.map_location().x != start_node.x:
+                                            if location.map_location().x != our_border.x:
                                                 gc.move_robot(unit.id,d)
                                                 break
                                 if location.is_on_map():
@@ -408,7 +408,7 @@ while True:
 
                     if got_to_enemy_start==True and gc.is_move_ready(unit.id):
                         fuzzygoto(unit,centre)
-            ### Mages ### currently goes straight up.
+            ### Mages ###
             if unit.unit_type == bc.UnitType.Mage :
                 if not unit.id in mages:
                     mages.append(unit.id)
@@ -425,7 +425,7 @@ while True:
                             continue
 
                     if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(centre)!= bc.Direction.Center :
-                            fuzzygoto(unit, unit.location.map_location().translate(0, earthMap.height))
+                            fuzzygoto(unit, bc.MapLocation(bc.Planet.Earth, unit.location.map_location().x, enemy_edge.y))
     except Exception as e:
         print('Error:', e)
         # use this to show where the error was
