@@ -33,6 +33,8 @@ mages = []
 pants = []
 the_lone_ranger = []
 the_neighborhood_watch = []
+maploc = []
+mars_maploc = []
 steps_north = 0
 steps_east = 0
 steps_west = 0
@@ -45,6 +47,16 @@ enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height
 #print("TestStarter")
 
 random.seed(1047)
+
+i = 0
+while i< marsMap.width:
+    j=0
+    while j < marsMap.height:
+        loc = bc.MapLocation(bc.Planet.Mars, i, j)
+        if marsMap.is_passable_terrain_at(loc):
+            mars_maploc.append(loc)
+        j+=1
+    i+=1
 
 gc.queue_research(bc.UnitType.Rocket)
 gc.queue_research(bc.UnitType.Mage)
@@ -120,6 +132,22 @@ def fuzzygoto(unit,dest):
             if stinky == False:
                 gc.move_robot(unit.id,d)
                 break
+            if d == bc.Direction.North:
+                blocked[unit.id] = [bc.Direction.South,bc.Direction.Southeast,bc.Direction.Southwest]
+            elif d == bc.Direction.Northeast:
+                blocked[unit.id] = [bc.Direction.Southwest,bc.Direction.South,bc.Direction.West]
+            elif d == bc.Direction.East:
+                blocked[unit.id] = [bc.Direction.West,bc.Direction.Southwest,bc.Direction.Northwest]
+            elif d == bc.Direction.Southeast:
+                blocked[unit.id] = [bc.Direction.Northwest,bc.Direction.North,bc.Direction.West]
+            elif d == bc.Direction.South:
+                blocked[unit.id] = [bc.Direction.North,bc.Direction.Northeast,bc.Direction.Northwest]
+            elif d == bc.Direction.Southwest:
+                blocked[unit.id] = [bc.Direction.Northeast,bc.Direction.North,bc.Direction.East]
+            elif d == bc.Direction.West:
+                blocked[unit.id] = [bc.Direction.East,bc.Direction.Northeast,bc.Direction.Southeast]
+            elif d == bc.Direction.Northwest:
+                blocked[unit.id] = [bc.Direction.Southeast,bc.Direction.South,bc.Direction.East]
 
 def lay_blueprint(worker_id, structure):
     for d in [directions[1], directions[3], directions[5],directions[7]]:
@@ -140,6 +168,13 @@ while True:
                 enemy_start = invert(start_node)
                 miners.append(unit.id) # starting workers are miners
 
+                if start_node.y < earthMap.height//2: # find out whether in top or bottom
+                    if 'Bottom' not in maploc:
+                        maploc.append('Bottom')
+                if start_node.y > earthMap.height//2:
+                    if 'Top' not in maploc:
+                        maploc.append('Top')
+
                 for d in directions:
                     if gc.can_replicate(unit.id, d): # try to make new workers now
                         gc.replicate(unit.id, d)
@@ -148,6 +183,14 @@ while True:
             elif gc.round() == 2:
                 if unit.id not in miners:
                     builders.append(unit.id) # new workers initialized as builders
+
+                if len(maploc) == 1: # find out whether in left or right
+                    pos = print(maploc)
+                else:
+                    if start_node.x < earthMap.width//2:
+                        pos = 'Left'
+                    else:
+                        pos = 'Right'
 
             if unit.id not in workers: # the workers list
                 workers.append(unit.id)
@@ -208,7 +251,8 @@ while True:
             if unit.unit_type == bc.UnitType.Rocket:
                 if not unit.id in pants:
                     pants.append(unit.id)
-
+                if unit.health == 0:
+                    pants.remove(unit.id)
                 garrison = unit.structure_garrison()
                 if len(garrison) == 0:
                     nearby = gc.sense_nearby_units(location.map_location(),2)
