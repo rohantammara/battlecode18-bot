@@ -38,6 +38,7 @@ steps_east = 0
 steps_west = 0
 steps_south = 0
 maploc = []
+mars_maploc = []
 
 prev_dir = bc.Direction.Center
 earthMap = gc.starting_map(bc.Planet.Earth)
@@ -45,9 +46,17 @@ marsMap = gc.starting_map(bc.Planet.Mars)
 centre = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height)//2)
 enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height))
 #print("TestStarter")
+i=0
+while i < marsMap.width:
+    j=0
+    while j < marsMap.height:
+        loc = bc.MapLocation(bc.Planet.Mars,i,j)
+        if marsMap.is_passable_terrain_at(loc):
+            mars_maploc.append(loc)
+        j+=1
+    i+=1
 
 random.seed(1047)
-
 gc.queue_research(bc.UnitType.Rocket)
 gc.queue_research(bc.UnitType.Mage)
 gc.queue_research(bc.UnitType.Knight)
@@ -290,7 +299,8 @@ while True:
             if  unit.unit_type == bc.UnitType.Knight :
                 if not unit.id in knights:
                     knights.append(unit.id)
-
+                if unit.health ==0:
+                    knights.remove(unit.id)
                 if location.is_on_map():
                     close_by=gc.sense_nearby_units(location.map_location(), 2)
                     for enemy in close_by:
@@ -304,7 +314,7 @@ while True:
                             fuzzygoto(unit,centre)
                     if unit.health == 0:
                         knights.remove(unit.id)
-            ### Rangers ###
+### Rangers ###
             if  unit.unit_type == bc.UnitType.Ranger :
                 if not unit.id in amadhya:
                     amadhya.append(unit.id)
@@ -349,7 +359,7 @@ while True:
 
                     if got_to_enemy_start==True and gc.is_move_ready(unit.id):
                         fuzzygoto(unit,centre)
-            ### Mages ### currently goes straight up.
+### Mages ### currently goes straight up.
             if unit.unit_type == bc.UnitType.Mage :
                 if not unit.id in mages:
                     mages.append(unit.id)
