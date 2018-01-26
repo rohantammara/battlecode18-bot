@@ -19,8 +19,13 @@ centre= bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height)//2)
 unit_needing_backup=[]
 mining =  True
 enemy_sensed=False
+
+#### NEW####
 miners_on_mars = []
 miners_on_mars_loc = []
+amadhya_on_mars = []
+############
+
 born_to_mine = []
 born_to_build = []
 blocked =  {}
@@ -31,7 +36,6 @@ legion_of_knights=[] #for knights
 number_enemy_sensed=[]
 enemy_sensed=False
 amadhya=[]
-amadhya_on_mars = []
 the_lone_ranger=[]
 got_to_enemy_start=False
 the_nights_watch=[]
@@ -123,13 +127,14 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
                 if location.map_location().x != corner3.x:
                     if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner3) != bc.Direction.Center:
                         fuzzygoto(unit,corner3)
-
+##### NEW ######
     elif location.is_on_planet(bc.Planet.Mars):
         if unit.id not in amadhya_on_mars and len(amadhya_on_mars) < 5:
             amadhya_on_mars.append(unit.id)
         if unit.id in amadhya_on_mars:
             ind = amadhya_on_mars.index(unit.id)
             fuzzygoto(unit,miners_on_mars_loc[ind])
+###############
     backup=False
     dont_move=False
     if location.is_on_map():
@@ -371,7 +376,7 @@ while True:
                                     if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
                                         gc.move_robot(unit.id,d)
                                         break
-
+#### NEW ####
                                 if location.is_on_planet(bc.Planet.Mars):
                                     if unit.id not in miners_on_mars and len(miners_on_mars) < 5:
                                         miners_on_mars.append(unit.id)
@@ -379,6 +384,8 @@ while True:
                                     elif unit.id in miners_on_mars:
                                         ind = miners_on_mars.index(unit.id)
                                         miners_on_mars_loc[ind] = location.map_location()
+###############                                        
+
 #miners need work
                                 if location.is_on_map():
                                     nearby = gc.sense_nearby_units(location.map_location(), 2)
