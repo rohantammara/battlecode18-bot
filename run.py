@@ -252,10 +252,29 @@ while True:
                             else:
                                 pos = 'Right'
 
+                        if pos == 'Bottom':
+                            our_border = centre.translate(0,-1)
+                            enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height))
+                        elif pos == 'Top':
+                            our_border = centre.translate(0,1)
+                            enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,0)
+                        elif pos == 'Left':
+                            our_border = centre.translate(-1,0)
+                            enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width),(earthMap.height)//2)
+                        elif pos == 'Right':
+                            our_border = centre.translate(1,0)
+                            enemy_edge = bc.MapLocation(bc.Planet.Earth,0,(earthMap.height)//2)
 
 
                     if not unit.id in born_to_mine and not unit.id in born_to_build:
                         born_to_mine.append(unit.id)
+
+                    if location.is_in_garrison():
+                        rocket_id = location.structure()
+                        for d in directions:
+                            if gc.can_unload(rocket_id,d):
+                                gc.unload(rocket_id,d)
+                                gc.disintegrate_unit(rocket_id)
 
                     if len(workers) < 20 and (gc.round())%5 == 0: # continue replication till sufficient
                         for d in directions:
@@ -271,31 +290,65 @@ while True:
                                 else:
                                     mining = True
 
+                                if mining == False:
+                                    direction_to_start_node=unit.location.map_location().direction_to(enemy_edge)
+                                    ind_for_this=directions.index(direction_to_start_node)
+                                    i=0
+                                    for tilt in  tryRotate:
+                                        d = rotate(directions[ind_for_this - 4],tilt)
+                                        if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
+                                            if pos == 'Top' or pos == 'Bottom':
+                                                if location.map_location().y != our_border.y:
+                                                    gc.move_robot(unit.id,d)
+                                                    break
+                                            elif pos == 'Left' or pos == 'Right':
+                                                if location.map_location().x != our_border.x:
+                                                    gc.move_robot(unit.id,d)
+                                                    break
+
+                                    if location.is_on_map():
+                                        nearby = gc.sense_nearby_units(location.map_location(), 2)
+                                        for other in nearby:
+                                            if other.unit_type == bc.UnitType.Factory:
+                                                if other.structure_is_built() and not other.id in dukan:
+                                                    continue
+                                                elif gc.can_build(unit.id,other.id):
+                                                    gc.build(unit.id, other.id)
+                                                elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
+                                                     gc.repair(unit.id,other.id)
+                                            if other.unit_type == bc.UnitType.Rocket:
+                                                if other.structure_is_built() and not other.id in pants:
+                                                    continue
+                                                elif gc.can_build(unit.id, other.id):
+                                                    gc.build(unit.id, other.id)
+
     # Workers in Born_to_build
                     else:
                         for d in list(bc.Direction):
                             if gc.can_harvest(unit.id, d):
                                 gc.harvest(unit.id, d)
                                 break
-                        nearby = gc.sense_nearby_units(location.map_location(), 2)
-                        for other in nearby:
-                            if other.unit_type == bc.UnitType.Factory:
-                                if other.structure_is_built() and not other.id in dukan:
-                                    continue
-                                elif gc.can_build(unit.id,other.id):
-                                    gc.build(unit.id, other.id)
-                                elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
-                                     gc.repair(unit.id,other.id)
 
-                            if other.unit_type == bc.UnitType.Rocket:
-                                if other.structure_is_built() and not other.id in pants:
-                                    continue
-                                elif gc.can_build(unit.id, other.id):
-                                    gc.build(unit.id, other.id)
-                        if gc.karbonite() > 100 and len(pants)<4:
-                            lay_blueprint(unit.id, bc.UnitType.Rocket)
-                        if gc.karbonite() > 200 and len(dukan)<8:
-                            lay_blueprint(unit.id, bc.UnitType.Factory)
+                        if location.is_on_map():
+                            nearby = gc.sense_nearby_units(location.map_location(), 2)
+                            for other in nearby:
+                                if other.unit_type == bc.UnitType.Factory:
+                                    if other.structure_is_built() and not other.id in dukan:
+                                        continue
+                                    elif gc.can_build(unit.id,other.id):
+                                        gc.build(unit.id, other.id)
+                                    elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
+                                         gc.repair(unit.id,other.id)
+
+                                if other.unit_type == bc.UnitType.Rocket:
+                                    if other.structure_is_built() and not other.id in pants:
+                                        continue
+                                    elif gc.can_build(unit.id, other.id):
+                                        gc.build(unit.id, other.id)
+                            if gc.karbonite() > 100 and len(pants)<4:
+                                lay_blueprint(unit.id, bc.UnitType.Rocket)
+                            if gc.karbonite() > 200 and len(dukan)<8:
+                                lay_blueprint(unit.id, bc.UnitType.Factory)
 
             ### Rocket Science ###
             if unit.unit_type == bc.UnitType.Rocket:
@@ -382,7 +435,7 @@ while True:
                             continue
 
                     if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(centre)!= bc.Direction.Center :
-                            fuzzygoto(unit, unit.location.map_location().translate(0, earthMap.height))
+                            fuzzygoto(unit, bc.MapLocation(bc.Planet.Earth, unit.location.map_location().x, enemy_edge.y))
 
     except Exception as e:
         print('Error:', e)
