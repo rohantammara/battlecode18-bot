@@ -41,7 +41,7 @@ enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height
 print("TestStarter")
 ark_angels=[]
 random.seed(1047)
-
+temp = []
 ## A list of all passable locations on mars ## #what does this do
 i = 0
 while i< marsMap.width:
@@ -87,6 +87,41 @@ def knights_job(unit):
         if unit.health==0:
             legion_of_knights.remove(unit.id)
 def rangers_job(unit,got_to_enemy_start,enemy_sensed):
+
+    if location.is_on_map():
+        if amadhya.index(unit.id) == 0:
+            if pos == 'Top' or pos == 'Bottom':
+                if location.map_location().y != corner1.y:
+                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner1) != bc.Direction.Center:
+                        fuzzygoto(unit,corner1)
+            elif pos == 'Left' or pos == 'Right':
+                if location.map_location().x != corner1.x:
+                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner1) != bc.Direction.Center:
+                        fuzzygoto(unit,corner1)
+
+        elif amadhya.index(unit.id) == 1:
+            if pos == 'Top' or pos == 'Bottom':
+                if location.map_location().y != corner2.y:
+                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner2) != bc.Direction.Center:
+                        fuzzygoto(unit,corner2)
+
+            elif pos == 'Left' or pos == 'Right':
+                if location.map_location().x != corner2.x:
+                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner2) != bc.Direction.Center:
+                        fuzzygoto(unit,corner2)
+
+        elif amadhya.index(unit.id) == 2:
+            if pos == 'Top' or pos == 'Bottom':
+                if location.map_location().y != corner3.y:
+                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner3) != bc.Direction.Center:
+                        fuzzygoto(unit,corner3)
+
+            elif pos == 'Left' or pos == 'Right':
+                if location.map_location().x != corner3.x:
+                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner3) != bc.Direction.Center:
+                        fuzzygoto(unit,corner3)
+
+
     backup=False
     dont_move=False
     if location.is_on_map():
@@ -224,8 +259,8 @@ while True:
             location = unit.location
 
             if gc.round()==1:
-                start_Node=location.map_location()
-                enemy_start=invert(start_Node)
+                start_node=location.map_location()
+                enemy_start=invert(start_node)
 
 # Append workers
 
@@ -245,10 +280,10 @@ while True:
                             else:
                                 continue
 
-                        if start_Node.y < earthMap.height//2: # find out whether in top or bottom
+                        if start_node.y < earthMap.height//2: # find out whether in top or bottom
                             if 'Bottom' not in maploc:
                                 maploc.append('Bottom')
-                        if start_Node.y > earthMap.height//2:
+                        if start_node.y > earthMap.height//2:
                             if 'Top' not in maploc:
                                 maploc.append('Top')
 
@@ -257,25 +292,49 @@ while True:
                             born_to_build.append(unit.id)
 
                         if len(maploc) == 1: # find out whether in left or right
-                            pos = print(maploc)
+                            pos = maploc[0]
                         else:
-                            if start_Node.x < earthMap.width//2:
-                                pos = 'Left'
-                            else:
-                                pos = 'Right'
+                            if start_node.x < earthMap.width//2:
+                                if 'Left' not in temp:
+                                    temp.append('Left')
+                            if start_node.x > earthMap.width//2:
+                                if 'Right' not in temp:
+                                    temp.append('Right')
 
-                        if pos == 'Bottom':
-                            our_border = centre.translate(0,-1)
-                            enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height))
-                        elif pos == 'Top':
-                            our_border = centre.translate(0,1)
-                            enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,0)
-                        elif pos == 'Left':
-                            our_border = centre.translate(-1,0)
-                            enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width),(earthMap.height)//2)
-                        elif pos == 'Right':
-                            our_border = centre.translate(1,0)
-                            enemy_edge = bc.MapLocation(bc.Planet.Earth,0,(earthMap.height)//2)
+                    elif gc.round() ==3:
+                            if len(temp)== 1:
+                                pos = temp[0]
+                            elif len(temp) ==2:
+                                pos ='Opposite'
+                            temp.clear()
+
+                            if pos == 'Bottom':
+                                corner1 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//4,(earthMap.height)//3)
+                                corner2 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//2,(earthMap.height)//3)
+                                corner3 = bc.MapLocation(bc.Planet.Earth, 3*(earthMap.width)//4,(earthMap.height)//3)
+                                enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height))
+                            elif pos == 'Top':
+                                corner1 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//4,2*(earthMap.height)//3)
+                                corner2 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//2,2*(earthMap.height)//3)
+                                corner3 = bc.MapLocation(bc.Planet.Earth, 3*(earthMap.width)//4,2*(earthMap.height)//3)
+                                enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,0)
+                            elif pos == 'Left':
+                                corner1 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//3,(earthMap.height)//4)
+                                corner2 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//3,(earthMap.height)//2)
+                                corner3 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//3,3*(earthMap.height)//4)
+                                enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width),(earthMap.height)//2)
+                            elif pos == 'Right':
+                                print(pos)
+                                corner1 = bc.MapLocation(bc.Planet.Earth, 2*(earthMap.width)//3,(earthMap.height)//4)
+                                corner2 = bc.MapLocation(bc.Planet.Earth, 2*(earthMap.width)//3,(earthMap.height)//2)
+                                corner3 = bc.MapLocation(bc.Planet.Earth, 2*(earthMap.width)//3,3*(earthMap.height)//4)
+                                enemy_edge = bc.MapLocation(bc.Planet.Earth,0,(earthMap.height)//2)
+                            else:
+                                print(pos)
+                                corner1 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//2,(earthMap.height)//2)
+                                corner2 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//2,(earthMap.height)//2)
+                                corner3 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//2,(earthMap.height)//2)
+                                enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height)//2)
 
 
                     if not unit.id in born_to_mine and not unit.id in born_to_build:
@@ -310,30 +369,24 @@ while True:
                                 for tilt in  tryRotate:
                                     d = rotate(directions[ind_for_this - 4],tilt)
                                     if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
-                                        if pos == 'Top' or pos == 'Bottom':
-                                            if location.map_location().y != our_border.y:
-                                                gc.move_robot(unit.id,d)
-                                                break
-                                        elif pos == 'Left' or pos == 'Right':
-                                            if location.map_location().x != our_border.x:
-                                                gc.move_robot(unit.id,d)
-                                                break
-
-                                        if location.is_on_map():
-                                            nearby = gc.sense_nearby_units(location.map_location(), 2)
-                                            for other in nearby:
-                                                if other.unit_type == bc.UnitType.Factory:
-                                                    if other.structure_is_built() and not other.id in dukan:
-                                                        continue
-                                                    elif gc.can_build(unit.id,other.id):
-                                                        gc.build(unit.id, other.id)
-                                                    elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
-                                                         gc.repair(unit.id,other.id)
-                                                if other.unit_type == bc.UnitType.Rocket:
-                                                    if other.structure_is_built() and not other.id in pants:
-                                                        continue
-                                                    elif gc.can_build(unit.id, other.id):
-                                                        gc.build(unit.id, other.id)
+                                        gc.move_robot(unit.id,d)
+                                        break
+#miners need work
+                                if location.is_on_map():
+                                    nearby = gc.sense_nearby_units(location.map_location(), 2)
+                                    for other in nearby:
+                                        if other.unit_type == bc.UnitType.Factory:
+                                            if other.structure_is_built() and not other.id in dukan:
+                                                continue
+                                            elif gc.can_build(unit.id,other.id):
+                                                gc.build(unit.id, other.id)
+                                            elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
+                                                 gc.repair(unit.id,other.id)
+                                        if other.unit_type == bc.UnitType.Rocket:
+                                            if other.structure_is_built() and not other.id in pants:
+                                                continue
+                                            elif gc.can_build(unit.id, other.id):
+                                                gc.build(unit.id, other.id)
 
     # Workers in Born_to_build
                     else:
@@ -420,7 +473,7 @@ while True:
             if  unit.unit_type == bc.UnitType.Healer :
 
                 if not unit in ark_angels :
-                    ark_angels.append(unit)        
+                    ark_angels.append(unit)
 
             if  unit.unit_type == bc.UnitType.Knight :
 
@@ -453,7 +506,7 @@ while True:
                         else:
                             continue
 
-                    if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(centre)!= bc.Direction.Center :
+                    if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(bc.MapLocation(bc.Planet.Earth, unit.location.map_location().x, enemy_edge.y))!= bc.Direction.Center :
                             fuzzygoto(unit, bc.MapLocation(bc.Planet.Earth, unit.location.map_location().x, enemy_edge.y))
 
     except Exception as e:
