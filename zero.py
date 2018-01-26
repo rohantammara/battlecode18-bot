@@ -6,47 +6,43 @@ import traceback
 import os
 print(os.getcwd())
 
-#print("Test starting")
+print("Test starting")
 
 gc = bc.GameController()
-# Initializing code
-all_map_directions = [bc.Direction.Center, bc.Direction.North, bc.Direction.Northeast, bc.Direction.East,
-bc.Direction.Southeast, bc.Direction.South, bc.Direction.Southwest,
-bc.Direction.West, bc.Direction.Northwest]
-
-directions = [bc.Direction.North, bc.Direction.Northeast,
-            bc.Direction.East, bc.Direction.Southeast, bc.Direction.South,
-            bc.Direction.Southwest, bc.Direction.West, bc.Direction.Northwest]
-
-tryRotate = [0,-1,-7,-2,-6]
-mining = True
-enemy_sensed = False
-got_to_enemy_start = False
-blocked = {}
-miners = []
-builders = []
+directions = [bc.Direction.North, bc.Direction.Northeast, bc.Direction.East,
+              bc.Direction.Southeast, bc.Direction.South, bc.Direction.Southwest,
+              bc.Direction.West, bc.Direction.Northwest]
+tryRotate = [0,-1,-7,-2,-6,-3,-5]
+#variablles for workers
+earthMap =  gc.starting_map(bc.Planet.Earth)
+centre= bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height)//2)
+unit_needing_backup=[]
+mining =  True
+enemy_sensed=False
+born_to_mine = []
+born_to_build = []
+blocked =  {}
 workers = []
-dukan = []
-amadhya = []
-knights = []
-mages = []
-pants = []
-the_lone_ranger = []
-the_neighborhood_watch = []
-maploc = []
-mars_maploc = []
-steps_north = 0
-steps_east = 0
-steps_west = 0
-steps_south = 0
-prev_dir = bc.Direction.Center
-earthMap = gc.starting_map(bc.Planet.Earth)
+dukan = [] #for factories
+legion_of_knights=[] #for knights
+#variables for rangers
+number_enemy_sensed=[]
+enemy_sensed=False
+amadhya=[]
+the_lone_ranger=[]
+got_to_enemy_start=False
+the_nights_watch=[]
+mages=[]
+pants=[]
+maploc=[]
+mars_maploc=[]
 marsMap = gc.starting_map(bc.Planet.Mars)
-centre = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height)//2)
-#print("TestStarter")
-
+enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height))
+print("TestStarter")
+ark_angels=[]
 random.seed(1047)
-## A list of all passable locations on mars ##
+temp = []
+## A list of all passable locations on mars ## #what does this do
 i = 0
 while i< marsMap.width:
     j=0
@@ -58,25 +54,127 @@ while i< marsMap.width:
     i+=1
 random.shuffle(mars_maploc)
 
+gc.queue_research(bc.UnitType.Worker)
 gc.queue_research(bc.UnitType.Rocket)
 gc.queue_research(bc.UnitType.Mage)
+gc.queue_research(bc.UnitType.Mage)
 gc.queue_research(bc.UnitType.Knight)
-gc.queue_research(bc.UnitType.Worker)
 
 my_team = gc.team()
 print(my_team)
+def does_it_need_backup(close_by,unit):
+    for junta in close_by:
+        if junta.team!=my_team:
+            number_enemy_sensed.append(junta.id)
+    if len(number_enemy_sensed)>2:
+        backup=True
+    else:
+        backup=False
+
+
+def knights_job(unit):
+    if location.is_on_map():
+        close_by = gc.sense_nearby_units(location.map_location(),2)
+        for enemy in close_by:
+            if enemy.team != my_team and gc.is_attack_ready(unit.id) and gc.can_attack(unit.id,enemy.id) :
+                print("attacking a thing")
+                gc.attack(unit.id,enemy.id)
+                break
+            else:
+                continue
+        if gc.is_move_ready(unit.id) and location.map_location().direction_to(centre)!= bc.Direction.Center:
+            fuzzygoto(unit,centre)
+        if unit.health==0:
+            legion_of_knights.remove(unit.id)
+def rangers_job(unit,got_to_enemy_start,enemy_sensed):
+
+    if location.is_on_map():
+        if amadhya.index(unit.id) == 0:
+            if pos == 'Top' or pos == 'Bottom':
+                if location.map_location().y != corner1.y:
+                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner1) != bc.Direction.Center:
+                        fuzzygoto(unit,corner1)
+            elif pos == 'Left' or pos == 'Right':
+                if location.map_location().x != corner1.x:
+                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner1) != bc.Direction.Center:
+                        fuzzygoto(unit,corner1)
+
+        elif amadhya.index(unit.id) == 1:
+            if pos == 'Top' or pos == 'Bottom':
+                if location.map_location().y != corner2.y:
+                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner2) != bc.Direction.Center:
+                        fuzzygoto(unit,corner2)
+
+            elif pos == 'Left' or pos == 'Right':
+                if location.map_location().x != corner2.x:
+                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner2) != bc.Direction.Center:
+                        fuzzygoto(unit,corner2)
+
+        elif amadhya.index(unit.id) == 2:
+            if pos == 'Top' or pos == 'Bottom':
+                if location.map_location().y != corner3.y:
+                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner3) != bc.Direction.Center:
+                        fuzzygoto(unit,corner3)
+
+            elif pos == 'Left' or pos == 'Right':
+                if location.map_location().x != corner3.x:
+                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner3) != bc.Direction.Center:
+                        fuzzygoto(unit,corner3)
+
+
+    backup=False
+    dont_move=False
+    if location.is_on_map():
+        close_by_for_ranger= gc.sense_nearby_units(location.map_location(),70)
+
+        backup=does_it_need_backup(close_by_for_ranger,unit)
+
+#manipulate lists containing units needing backup
+        if unit in unit_needing_backup and backup==False:
+            unit_needing_backup.remove(unit)
+        elif not unit in unit_needing_backup and backup==True:
+            unit_needing_backup.append(unit)
+
+
+        for junta in close_by_for_ranger:
+            if not junta:
+                dont_move=False
+            elif junta.team!=my_team and unit.location.map_location().is_within_range(50,junta.location.map_location()):
+                dont_move=True
+            if junta.team !=my_team and  gc.is_attack_ready(unit.id) and gc.can_attack(unit.id,junta.id) :
+                #print("attacking a thing")
+                current_junta_health=junta.health
+                print('junta.id',junta.id)
+                gc.attack(unit.id,junta.id)
+                print('junta.health', junta.health)
+
+                break
+
+        if not unit in the_nights_watch and len(the_nights_watch)<3:
+            the_nights_watch.append(unit)
+
+        if unit_needing_backup:
+
+            fuzzygoto(unit,unit_needing_backup[0].location.map_location())
+
 
 def invert(loc):
     newx=earthMap.width-loc.x
     newy=earthMap.height-loc.y
     return bc.MapLocation(bc.Planet.Earth,newx,newy)
 
+def lay_blueprint(worker_id, structure):
+    for d in [directions[1], directions[3], directions[5],directions[7]]:
+        if gc.can_blueprint(worker_id, structure, d):
+            gc.blueprint(worker_id, structure, d)
+        else:
+            continue
+
 def Karbonite_Mining(id,directions,unit,mining):
     karbonite_collected = False
-    for d in all_map_directions:
+    for d in list(bc.Direction):
         if gc.can_harvest(id, d):
             gc.harvest(id, d)
-            prev_dir = d
             karbonite_collected = False
             break
         else:
@@ -91,38 +189,38 @@ def Karbonite_Mining(id,directions,unit,mining):
                     break
                 else:
                     mining = False
-            if mining == True:
+            if mining ==True:
                 break
-    return(mining)
+    return (mining)
 
 def rotate(dir,amount):
     ind = directions.index(dir)
     return directions[(ind+amount)]
-# Path finding
+
 def fuzzygoto(unit,dest):
     toward = unit.location.map_location().direction_to(dest)
     for tilt in  tryRotate:
         d = rotate(toward,tilt)
         if gc.can_move(unit.id,d):
             if unit.id not in blocked.keys():
-                if d == bc.Direction.North:
-                    blocked[unit.id] = [bc.Direction.South,bc.Direction.Southeast,bc.Direction.Southwest]
-                elif d == bc.Direction.Northeast:
-                    blocked[unit.id] = [bc.Direction.Southwest,bc.Direction.South,bc.Direction.West]
-                elif d == bc.Direction.East:
-                    blocked[unit.id] = [bc.Direction.West,bc.Direction.Southwest,bc.Direction.Northwest]
-                elif d == bc.Direction.Southeast:
+                 if d == bc.Direction.North:
+                     blocked[unit.id] = [bc.Direction.South,bc.Direction.Southeast,bc.Direction.Southwest]
+                 elif d == bc.Direction.Northeast:
+                     blocked[unit.id] = [bc.Direction.Southwest,bc.Direction.South,bc.Direction.West]
+                 elif d == bc.Direction.East:
+                     blocked[unit.id] = [bc.Direction.West,bc.Direction.Southwest,bc.Direction.Northwest]
+                 elif d == bc.Direction.Southeast:
                      blocked[unit.id] = [bc.Direction.Northwest,bc.Direction.North,bc.Direction.West]
-                elif d == bc.Direction.South:
-                    blocked[unit.id] = [bc.Direction.North,bc.Direction.Northeast,bc.Direction.Northwest]
-                elif d == bc.Direction.Southwest:
-                    blocked[unit.id] = [bc.Direction.Northeast,bc.Direction.North,bc.Direction.East]
-                elif d == bc.Direction.West:
-                    blocked[unit.id] = [bc.Direction.East,bc.Direction.Northeast,bc.Direction.Southeast]
-                elif d == bc.Direction.Northwest:
-                    blocked[unit.id] = [bc.Direction.Southeast,bc.Direction.South,bc.Direction.East]
-                else:
-                    continue
+                 elif d == bc.Direction.South:
+                     blocked[unit.id] = [bc.Direction.North,bc.Direction.Northeast,bc.Direction.Northwest]
+                 elif d == bc.Direction.Southwest:
+                     blocked[unit.id] = [bc.Direction.Northeast,bc.Direction.North,bc.Direction.East]
+                 elif d == bc.Direction.West:
+                     blocked[unit.id] = [bc.Direction.East,bc.Direction.Northeast,bc.Direction.Southeast]
+                 elif d == bc.Direction.Northwest:
+                     blocked[unit.id] = [bc.Direction.Southeast,bc.Direction.South,bc.Direction.East]
+                 else:
+                     continue
             for values in blocked[unit.id]:
                 if values == d:
                     stinky = True
@@ -131,30 +229,27 @@ def fuzzygoto(unit,dest):
                     stinky = False
             if stinky == False:
                 gc.move_robot(unit.id,d)
-                break
-            if d == bc.Direction.North:
-                blocked[unit.id] = [bc.Direction.South,bc.Direction.Southeast,bc.Direction.Southwest]
-            elif d == bc.Direction.Northeast:
-                blocked[unit.id] = [bc.Direction.Southwest,bc.Direction.South,bc.Direction.West]
-            elif d == bc.Direction.East:
-                blocked[unit.id] = [bc.Direction.West,bc.Direction.Southwest,bc.Direction.Northwest]
-            elif d == bc.Direction.Southeast:
-                blocked[unit.id] = [bc.Direction.Northwest,bc.Direction.North,bc.Direction.West]
-            elif d == bc.Direction.South:
-                blocked[unit.id] = [bc.Direction.North,bc.Direction.Northeast,bc.Direction.Northwest]
-            elif d == bc.Direction.Southwest:
-                blocked[unit.id] = [bc.Direction.Northeast,bc.Direction.North,bc.Direction.East]
-            elif d == bc.Direction.West:
-                blocked[unit.id] = [bc.Direction.East,bc.Direction.Northeast,bc.Direction.Southeast]
-            elif d == bc.Direction.Northwest:
-                blocked[unit.id] = [bc.Direction.Southeast,bc.Direction.South,bc.Direction.East]
 
-def lay_blueprint(worker_id, structure):
-    for d in [directions[1], directions[3], directions[5],directions[7]]:
-        if gc.can_blueprint(worker_id, structure, d):
-            gc.blueprint(worker_id, structure, d)
-        else:
-            continue
+                break
+
+    if d == bc.Direction.North:
+        blocked[unit.id] = [bc.Direction.South,bc.Direction.Southeast,bc.Direction.Southwest]
+    elif d == bc.Direction.Northeast:
+        blocked[unit.id] = [bc.Direction.Southwest,bc.Direction.South,bc.Direction.West]
+    elif d == bc.Direction.East:
+        blocked[unit.id] = [bc.Direction.West,bc.Direction.Southwest,bc.Direction.Northwest]
+    elif d == bc.Direction.Southeast:
+        blocked[unit.id] = [bc.Direction.Northwest,bc.Direction.North,bc.Direction.West]
+    elif d == bc.Direction.South:
+        blocked[unit.id] = [bc.Direction.North,bc.Direction.Northeast,bc.Direction.Northwest]
+    elif d == bc.Direction.Southwest:
+        blocked[unit.id] = [bc.Direction.Northeast,bc.Direction.North,bc.Direction.East]
+    elif d == bc.Direction.West:
+        blocked[unit.id] = [bc.Direction.East,bc.Direction.Northeast,bc.Direction.Southeast]
+    elif d == bc.Direction.Northwest:
+        blocked[unit.id] = [bc.Direction.Southeast,bc.Direction.South,bc.Direction.East]
+
+
 
 while True:
     print('pyround:', gc.round())
@@ -163,55 +258,14 @@ while True:
         for unit in gc.my_units():
             location = unit.location
 
-            if gc.round() == 1:
-                start_node = location.map_location()
-                enemy_start = invert(start_node)
-                miners.append(unit.id) # starting workers are miners
-
-                if start_node.y < earthMap.height//2: # find out whether in top or bottom
-                    if 'Bottom' not in maploc:
-                        maploc.append('Bottom')
-                if start_node.y > earthMap.height//2:
-                    if 'Top' not in maploc:
-                        maploc.append('Top')
-
-                for d in directions:
-                    if gc.can_replicate(unit.id, d): # try to make new workers now
-                        gc.replicate(unit.id, d)
-                    else:
-                        continue
-            elif gc.round() == 2:
-                if unit.id not in miners:
-                    builders.append(unit.id) # new workers initialized as builders
-
-                if len(maploc) == 1: # find out whether in left or right
-                    pos = maploc[0]
-                    print(pos)
-                else:
-                    if start_node.x < earthMap.width//2:
-                        pos = 'Left'
-                    else:
-                        pos = 'Right'
-                    print(pos)
-                if pos == 'Bottom':
-                    our_border = centre.translate(0,-1)
-                    enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height))
-                elif pos == 'Top':
-                    our_border = centre.translate(0,1)
-                    enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,0)
-                elif pos == 'Left':
-                    our_border = centre.translate(-1,0)
-                    enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width),(earthMap.height)//2)
-                elif pos == 'Right':
-                    our_border = centre.translate(1,0)
-                    enemy_edge = bc.MapLocation(bc.Planet.Earth,0,(earthMap.height)//2)
-
-            if unit.id not in workers: # the workers list
-                workers.append(unit.id)
+            if gc.round()==1:
+                start_node=location.map_location()
+                enemy_start=invert(start_node)
             ### Workers ###
-            if unit.unit_type == bc.UnitType.Worker:
-                if not unit.id in miners and not unit.id in builders:
-                    miners.append(unit.id)
+            if unit.unit_type == bc.UnitType.Worker :
+                if location.is_on_map():
+                    if unit.id not in workers:
+                        workers.append(unit.id)
 
                 if location.is_in_garrison():
                     rocket_id = location.structure()
@@ -220,34 +274,107 @@ while True:
                             gc.unload(rocket_id,d)
                             gc.disintegrate_unit(rocket_id)
 
-                if len(workers) < 20 and (gc.round())%5 == 0: # continue replication till sufficient
-                    for d in directions:
-                        if gc.can_replicate(unit.id,d):
-                            gc.replicate(unit.id,d)
+    # Append in Born_to_mine
+                    if gc.round()==1:
+                        born_to_mine.append(unit.id)
+                        for d in directions:
+                            if gc.can_replicate(unit.id,d):
+                                gc.replicate(unit.id,d)
+                            else:
+                                continue
 
-                if unit.id in miners: # miners mine
-                    mining = Karbonite_Mining(unit.id,directions,unit,mining)
-                    if mining == False:
-                            miners.remove(unit.id)
-                            if len(miners) == 0:
+                        if start_node.y < earthMap.height//2: # find out whether in top or bottom
+                            if 'Bottom' not in maploc:
+                                maploc.append('Bottom')
+                        if start_node.y > earthMap.height//2:
+                            if 'Top' not in maploc:
+                                maploc.append('Top')
+
+                    elif gc.round() ==2:
+                        if unit.id not in born_to_mine:
+                            born_to_build.append(unit.id)
+
+                        if len(maploc) == 1: # find out whether in left or right
+                            pos = maploc[0]
+                        else:
+                            if start_node.x < earthMap.width//2:
+                                if 'Left' not in temp:
+                                    temp.append('Left')
+                            if start_node.x > earthMap.width//2:
+                                if 'Right' not in temp:
+                                    temp.append('Right')
+
+                    elif gc.round() ==3:
+                            if len(temp)== 1:
+                                pos = temp[0]
+                            elif len(temp) ==2:
+                                pos ='Opposite'
+                            temp.clear()
+
+                            if pos == 'Bottom':
+                                corner1 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//4,(earthMap.height)//3)
+                                corner2 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//2,(earthMap.height)//3)
+                                corner3 = bc.MapLocation(bc.Planet.Earth, 3*(earthMap.width)//4,(earthMap.height)//3)
+                                enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height))
+                            elif pos == 'Top':
+                                corner1 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//4,2*(earthMap.height)//3)
+                                corner2 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//2,2*(earthMap.height)//3)
+                                corner3 = bc.MapLocation(bc.Planet.Earth, 3*(earthMap.width)//4,2*(earthMap.height)//3)
+                                enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,0)
+                            elif pos == 'Left':
+                                corner1 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//3,(earthMap.height)//4)
+                                corner2 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//3,(earthMap.height)//2)
+                                corner3 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//3,3*(earthMap.height)//4)
+                                enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width),(earthMap.height)//2)
+                            elif pos == 'Right':
+                                print(pos)
+                                corner1 = bc.MapLocation(bc.Planet.Earth, 2*(earthMap.width)//3,(earthMap.height)//4)
+                                corner2 = bc.MapLocation(bc.Planet.Earth, 2*(earthMap.width)//3,(earthMap.height)//2)
+                                corner3 = bc.MapLocation(bc.Planet.Earth, 2*(earthMap.width)//3,3*(earthMap.height)//4)
+                                enemy_edge = bc.MapLocation(bc.Planet.Earth,0,(earthMap.height)//2)
+                            else:
+                                print(pos)
+                                corner1 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//2,(earthMap.height)//2)
+                                corner2 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//2,(earthMap.height)//2)
+                                corner3 = bc.MapLocation(bc.Planet.Earth, (earthMap.width)//2,(earthMap.height)//2)
+                                enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height)//2)
+
+
+                    if not unit.id in born_to_mine and not unit.id in born_to_build:
+                        born_to_mine.append(unit.id)
+
+                    if location.is_in_garrison():
+                        rocket_id = location.structure()
+                        for d in directions:
+                            if gc.can_unload(rocket_id,d):
+                                gc.unload(rocket_id,d)
+                                gc.disintegrate_unit(rocket_id)
+
+                    if len(workers) < 20 and (gc.round())%5 == 0: # continue replication till sufficient
+                        for d in directions:
+                            if gc.can_replicate(unit.id,d):
+                                gc.replicate(unit.id,d)
+# Workers in Born_to_mine
+                    if unit.id in born_to_mine:
+                        mining = Karbonite_Mining(unit.id,directions,unit,mining)
+                        if mining == False:
+                            born_to_mine.remove(unit.id)
+                            if len(born_to_mine) == 0:
                                 mining = False
                             else:
                                 mining = True
-                            if mining == False:
+
+                            if gc.planet()==bc.Planet.Earth and unit.location.map_location().direction_to(enemy_edge)!=bc.Direction.Center:
                                 direction_to_start_node=unit.location.map_location().direction_to(enemy_edge)
                                 ind_for_this=directions.index(direction_to_start_node)
+                                print("got here")
                                 i=0
                                 for tilt in  tryRotate:
                                     d = rotate(directions[ind_for_this - 4],tilt)
                                     if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
-                                        if pos == 'Top' or pos == 'Bottom':
-                                            if location.map_location().y != our_border.y:
-                                                gc.move_robot(unit.id,d)
-                                                break
-                                        elif pos == 'Left' or pos == 'Right':
-                                            if location.map_location().x != our_border.x:
-                                                gc.move_robot(unit.id,d)
-                                                break
+                                        gc.move_robot(unit.id,d)
+                                        break
+#miners need work
                                 if location.is_on_map():
                                     nearby = gc.sense_nearby_units(location.map_location(), 2)
                                     for other in nearby:
@@ -263,31 +390,35 @@ while True:
                                                 continue
                                             elif gc.can_build(unit.id, other.id):
                                                 gc.build(unit.id, other.id)
-                else:
-                    for d in all_map_directions:
-                        if gc.can_harvest(unit.id, d):
-                            gc.harvest(unit.id, d)
-                            break
-                    # blueprint and build
-                    if location.is_on_map():
-                        nearby = gc.sense_nearby_units(location.map_location(), 2)
-                        for other in nearby:
-                            if other.unit_type == bc.UnitType.Factory:
-                                if other.structure_is_built() and not other.id in dukan:
-                                    continue
-                                elif gc.can_build(unit.id,other.id):
-                                    gc.build(unit.id, other.id)
-                                elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
-                                     gc.repair(unit.id,other.id)
-                            if other.unit_type == bc.UnitType.Rocket:
-                                if other.structure_is_built() and not other.id in pants:
-                                    continue
-                                elif gc.can_build(unit.id, other.id):
-                                    gc.build(unit.id, other.id)
-                        if gc.karbonite() > 100 and len(pants)<4:
-                            lay_blueprint(unit.id, bc.UnitType.Rocket)
-                        if gc.karbonite() > 200 and len(dukan)<8:
-                            lay_blueprint(unit.id, bc.UnitType.Factory)
+
+    # Workers in Born_to_build
+                    else:
+                        for d in list(bc.Direction):
+                            if gc.can_harvest(unit.id, d):
+                                gc.harvest(unit.id, d)
+                                break
+
+                        if location.is_on_map():
+                            nearby = gc.sense_nearby_units(location.map_location(), 2)
+                            for other in nearby:
+                                if other.unit_type == bc.UnitType.Factory:
+                                    if other.structure_is_built() and not other.id in dukan:
+                                        continue
+                                    elif gc.can_build(unit.id,other.id):
+                                        gc.build(unit.id, other.id)
+                                    elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
+                                         gc.repair(unit.id,other.id)
+
+                                if other.unit_type == bc.UnitType.Rocket:
+                                    if other.structure_is_built() and not other.id in pants:
+                                        continue
+                                    elif gc.can_build(unit.id, other.id):
+                                        gc.build(unit.id, other.id)
+                            if gc.karbonite() > 100 and len(pants)<4:
+                                lay_blueprint(unit.id, bc.UnitType.Rocket)
+                            if gc.karbonite() > 200 and len(dukan)<8:
+                                lay_blueprint(unit.id, bc.UnitType.Factory)
+
             ### Rocket Science ###
             if unit.unit_type == bc.UnitType.Rocket:
                 if not unit.id in pants:
@@ -306,7 +437,6 @@ while True:
                         for land in mars_maploc:
                             if gc.has_unit_at_location(land) == False and gc.can_launch_rocket(unit.id, land):
                                 mars_maploc.remove(land)
-                                pants.remove(unit.id)
                                 gc.launch_rocket(unit.id, land)
                                 print('a rocket has been launched!')
                     elif location.is_on_planet(bc.Planet.Mars):
@@ -314,8 +444,10 @@ while True:
                         for d in directions:
                             if gc.can_unload(unit.id,d):
                                 gc.unload(unit.id,d)
+
             ### Factory Output ###
-            if unit.unit_type == bc.UnitType.Factory:
+            if unit.unit_type == bc.UnitType.Factory :
+
                 if not unit.id in dukan:
                     dukan.append(unit.id)
 
@@ -324,92 +456,46 @@ while True:
                     for d in directions:
                         if gc.can_unload(unit.id,d):
                             gc.unload(unit.id,d)
+#producing knights
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Knight) and len(legion_of_knights)<5:
+                    gc.produce_robot(unit.id, bc.UnitType.Knight)
+                    print('produced a knight!')
+#producing rangers
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger) and len(amadhya)<5:
+                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                        print('produced a ranger!')
 
-                else:
-                    if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):
-                        if (enemy_sensed==False and got_to_enemy_start==False) and len(amadhya)<5:
-                            gc.produce_robot(unit.id, bc.UnitType.Ranger)
-                            print('produced a ranger!')
-                        elif (enemy_sensed==True or got_to_enemy_start==True) and len(amadhya)<7:
-                            gc.produce_robot(unit.id, bc.UnitType.Ranger)
-                            print('produced a ranger!')
-
-                    if gc.can_produce_robot(unit.id, bc.UnitType.Mage) and len(mages)<4:
+#producing mages
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Mage) and len(mages)<4:
                         gc.produce_robot(unit.id, bc.UnitType.Mage)
                         print('produced a mage!')
+#producing healers
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Healer) and len(ark_angels)<4:
+                        gc.produce_robot(unit.id, bc.UnitType.Healer)
+                        print('produced a healer!')
+            ### Healers ###
+            if  unit.unit_type == bc.UnitType.Healer :
 
-                    if gc.can_produce_robot(unit.id, bc.UnitType.Knight):
-                        if len(knights)<5 and (enemy_sensed==False or got_to_enemy_start==False):
-                            gc.produce_robot(unit.id, bc.UnitType.Knight)
-                            print('produced a knight!')
-                        elif (enemy_sensed==True or got_to_enemy_start==True) and len(knights)<10:
-                            gc.produce_robot(unit.id, bc.UnitType.Knight)
-                            print('produced a knight!')
+                if not unit in ark_angels :
+                    ark_angels.append(unit)
             ### Knights ###
             if  unit.unit_type == bc.UnitType.Knight :
-                if not unit.id in knights:
-                    knights.append(unit.id)
 
-                if location.is_on_map():
-                    close_by=gc.sense_nearby_units(location.map_location(), 2)
-                    for enemy in close_by:
-                        if enemy.team !=my_team and gc.is_attack_ready(unit.id) and gc.can_attack(unit.id,enemy.id) :
-                            print("attacking a thing")
-                            gc.attack(unit.id,enemy.id)
-                            break
-                        else:
-                            continue
-                    if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(centre)!= bc.Direction.Center:
-                            fuzzygoto(unit,centre)
-                    if unit.health == 0:
-                        knights.remove(unit.id)
+                if not unit.id in legion_of_knights:
+                    legion_of_knights.append(unit.id)
+
+                knights_job(unit)
+
             ### Rangers ###
             if  unit.unit_type == bc.UnitType.Ranger :
+
                 if not unit.id in amadhya:
                     amadhya.append(unit.id)
-                    print(len(amadhya))
 
-                if location.is_on_map():
-                    close_by_for_ranger= gc.sense_nearby_units(location.map_location(), 50)
-                    for junta in close_by_for_ranger:
-                        if junta.team != my_team and  gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, junta.id) :
-                            print("attacking a thing")
-                            gc.attack(unit.id, junta.id)
-                            break
-                        elif not gc.can_attack(unit.id,junta.id) and unit.id in the_neighborhood_watch and junta.team !=my_team:
-                            enemy_sensed=True
-                            continue
-
-                    if not unit.id in the_lone_ranger and len(the_lone_ranger)==0:
-                        the_lone_ranger.append(unit.id)
-
-                    if unit.id in the_lone_ranger:
-                        if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(enemy_start)!= bc.Direction.Center and got_to_enemy_start==False :
-                                fuzzygoto(unit,enemy_start)
-                        if location.map_location().distance_squared_to(enemy_start)<20:
-                            got_to_enemy_start=True
-
-                    if not unit.id in the_lone_ranger and enemy_sensed==False and len(the_neighborhood_watch)<5:
-                        the_neighborhood_watch.append(unit.id)
-
-                    if unit.id in the_neighborhood_watch and gc.is_move_ready(unit.id):
-                        if the_neighborhood_watch.index(unit.id)==0 and steps_north<5 and gc.can_move(unit.id,bc.Direction.North):
-                            gc.move_robot(unit.id,bc.Direction.North)
-                            steps_north+=1
-                        elif  the_neighborhood_watch.index(unit.id)==1 and steps_east<5 and gc.can_move(unit.id,bc.Direction.East):
-                            gc.move_robot(unit.id,bc.Direction.East)
-                            steps_east+=1
-                        elif the_neighborhood_watch.index(unit.id)==2 and steps_south<5 and gc.can_move(unit.id,bc.Direction.South):
-                            gc.move_robot(unit.id,bc.Direction.South)
-                            steps_south+=1
-                        elif the_neighborhood_watch.index(unit.id)==3 and steps_west<5 and gc.can_move(unit.id,bc.Direction.West):
-                            gc.move_robot(unit.id,bc.Direction.West)
-                            steps_west+=1
-
-                    if got_to_enemy_start==True and gc.is_move_ready(unit.id):
-                        fuzzygoto(unit,centre)
+                rangers_job(unit,got_to_enemy_start,enemy_sensed)
             ### Mages ###
             if unit.unit_type == bc.UnitType.Mage :
+
                 if not unit.id in mages:
                     mages.append(unit.id)
                     print(len(mages))
@@ -424,8 +510,9 @@ while True:
                         else:
                             continue
 
-                    if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(centre)!= bc.Direction.Center :
+                    if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(bc.MapLocation(bc.Planet.Earth, unit.location.map_location().x, enemy_edge.y))!= bc.Direction.Center :
                             fuzzygoto(unit, bc.MapLocation(bc.Planet.Earth, unit.location.map_location().x, enemy_edge.y))
+
     except Exception as e:
         print('Error:', e)
         # use this to show where the error was
