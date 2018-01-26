@@ -448,7 +448,7 @@ while True:
                 if unit.health == 0:
                     pants.remove(unit.id)
                 garrison = unit.structure_garrison()
-                if len(garrison) < 5:
+                if len(garrison) < 8:
                     if location.is_on_planet(bc.Planet.Earth):
                         nearby_ranger = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Ranger)
                         #nearby_knight = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Knight)
@@ -471,7 +471,7 @@ while True:
                             for d in directions:
                                 if gc.can_unload(unit.id,d):
                                     gc.unload(unit.id,d)
-                elif len(garrison) == 5:
+                elif len(garrison) == 8:
                     if location.is_on_planet(bc.Planet.Earth) and gc.current_duration_of_flight()<100:
                         for land in mars_maploc:
                             if gc.has_unit_at_location(land) == False and gc.can_launch_rocket(unit.id, land):
