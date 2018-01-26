@@ -47,7 +47,6 @@ miners_on_mars = []
 miners_on_mars_loc = []
 amadhya_on_mars = []
 rocket_locs = [] # initial locations of rockets on earth
-
 ## A list of all passable locations on mars ## #what does this do
 i = 0
 while i< marsMap.width:
@@ -62,12 +61,29 @@ random.shuffle(mars_maploc)
 
 gc.queue_research(bc.UnitType.Worker)
 gc.queue_research(bc.UnitType.Rocket)
+gc.queue_research(bc.UnitType.Ranger)
+gc.queue_research(bc.UnitType.Ranger)
+gc.queue_research(bc.UnitType.Ranger)
 gc.queue_research(bc.UnitType.Mage)
 gc.queue_research(bc.UnitType.Mage)
+#gc.queue_research(bc.UnitType.Mage)
 gc.queue_research(bc.UnitType.Knight)
 
 my_team = gc.team()
+
 print(my_team)
+
+def goto_rocket(unit):
+    goto_loc = centre
+    prev_dist = sys.maxsize
+    for loc in rocket_locs:
+        dist = unit.location.map_location().distance_squared_to(loc)
+        if dist < prev_dist:
+            prev_dist = dist
+            goto_loc = loc
+    if gc.is_move_ready(unit.id):
+        fuzzygoto(unit,goto_loc)
+
 def does_it_need_backup(close_by,unit):
     number_enemy_sensed[:]=[]
     for junta in close_by:
@@ -77,7 +93,6 @@ def does_it_need_backup(close_by,unit):
         backup=True
     else:
         backup=False
-
 
 def knights_job(unit):
     if location.is_on_map():
@@ -90,7 +105,8 @@ def knights_job(unit):
             else:
                 continue
         if gc.is_move_ready(unit.id) and location.map_location().direction_to(centre)!= bc.Direction.Center:
-            fuzzygoto(unit,centre)
+            #fuzzygoto(unit,centre)
+            goto_rocket(unit)
         if unit.health==0:
             legion_of_knights.remove(unit.id)
 def rangers_job(unit,got_to_enemy_start,enemy_sensed):
@@ -129,14 +145,7 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
                             fuzzygoto(unit,corner3)
 
             elif amadhya.index(unit.id) > 2:
-                prev_dist = sys.maxsize
-                for loc in rocket_locs:
-                    dist = unit.location.map_location().distance_squared_to(loc)
-                    if dist < prev_dist:
-                        prev_dist = dist
-                        goto_loc = loc
-                if gc.is_move_ready(unit.id):
-                    fuzzygoto(unit,goto_loc)
+                goto_rocket(unit)
 
     elif location.is_on_planet(bc.Planet.Mars):
         if unit.id not in amadhya_on_mars and len(amadhya_on_mars) < 5:
@@ -144,6 +153,11 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
         if unit.id in amadhya_on_mars:
             ind = amadhya_on_mars.index(unit.id)
             fuzzygoto(unit,miners_on_mars_loc[ind])
+        nearby_rockets = gc.sense_nearby_units_by_type(location,2,bc.UnitType.Rocket)
+        if len(nearby_rockets) != 0:
+            for d in directions:
+                if gc.is_move_ready(unit.id) and gc.can_move(unit.id,d):
+                    gc.move(unit.id,d)
 
     backup=False
     dont_move=False
@@ -436,7 +450,7 @@ while True:
                                     elif gc.can_build(unit.id, other.id):
                                         gc.build(unit.id, other.id)
                                         rocket_locs.append(other.location.map_location())
-                            if gc.karbonite() > 100 and len(pants)<4:
+                            if gc.karbonite() > 100 and len(pants)<8:
                                 lay_blueprint(unit.id, bc.UnitType.Rocket)
                             if gc.karbonite() > 200 and len(dukan)<8:
                                 lay_blueprint(unit.id, bc.UnitType.Factory)
@@ -451,19 +465,36 @@ while True:
                 if len(garrison) < 8:
                     if location.is_on_planet(bc.Planet.Earth):
                         nearby_ranger = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Ranger)
-                        #nearby_knight = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Knight)
-                        #nearby_mage = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Mage)
+                        nearby_knight = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Knight)
+                        nearby_mage = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Mage)
                         nearby_worker = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Worker)
-                        #nearby_healer = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Healer)
-                        for robot in nearby_ranger:
-                            if gc.is_move_ready(robot.id) and gc.can_load(unit.id, robot.id):
-                                gc.load(unit.id, robot.id)
-                                print('ranger has been loaded!')
-                        for robot in nearby_worker:
-                            if gc.is_move_ready(robot.id) and gc.can_load(unit.id, robot.id) and loaded_workers<2:
-                                gc.load(unit.id, robot.id)
-                                loaded_workers += 1
-                                print('worker has been loaded!')
+                        nearby_healer = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Healer)
+                        if len(nearby_ranger) != 0:
+                            for robot in nearby_ranger:
+                                if gc.is_move_ready(robot.id) and gc.can_load(unit.id, robot.id):
+                                    gc.load(unit.id, robot.id)
+                                    print('ranger has been loaded!')
+                        elif len(nearby_worker) != 0:
+                            for robot in nearby_worker:
+                                if gc.is_move_ready(robot.id) and gc.can_load(unit.id, robot.id) and loaded_workers<2:
+                                    gc.load(unit.id, robot.id)
+                                    loaded_workers += 1
+                                    print('worker has been loaded!')
+                        elif len(nearby_mage) != 0:
+                            for robot in nearby_mage:
+                                if gc.is_move_ready(robot.id) and gc.can_load(unit.id, robot.id):
+                                    gc.load(unit.id, robot.id)
+                                    print('mage has been loaded!')
+                        elif len(nearby_healer) != 0:
+                            for robot in nearby_healer:
+                                if gc.is_move_ready(robot.id) and gc.can_load(unit.id, robot.id):
+                                    gc.load(unit.id, robot.id)
+                                    print('healer has been loaded!')
+                        else:
+                            for robot in nearby_knight:
+                                if gc.is_move_ready(robot.id) and gc.can_load(unit.id, robot.id):
+                                    gc.load(unit.id, robot.id)
+                                    print('knight has been loaded!')
                     elif location.is_on_planet(bc.Planet.Mars):
                         if len(garrison) == 0:
                             gc.disintegrate_unit(unit.id)
@@ -476,6 +507,12 @@ while True:
                         for land in mars_maploc:
                             if gc.has_unit_at_location(land) == False and gc.can_launch_rocket(unit.id, land):
                                 mars_maploc.remove(land)
+                                for robot in gc.sense_nearby_units(location.map_location(),2):
+                                    for d in directions:
+                                        if robot.unit_type != bc.UnitType.Factory and gc.is_move_ready(robot.id) and gc.can_move(robot.id,d):
+                                            gc.move_robot(robot.id,d)
+                                        else:
+                                            continue
                                 gc.launch_rocket(unit.id, land)
                                 print('a rocket has been launched!')
                     elif location.is_on_planet(bc.Planet.Mars):
@@ -500,17 +537,17 @@ while True:
                     print('produced a knight!')
 #producing rangers
                 elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger) and len(amadhya)<10:
-                                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
-                                        print('produced a ranger!')
+                    gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                    print('produced a ranger!')
 
 #producing mages
                 elif gc.can_produce_robot(unit.id, bc.UnitType.Mage) and len(mages)<4:
-                        gc.produce_robot(unit.id, bc.UnitType.Mage)
-                        print('produced a mage!')
+                    gc.produce_robot(unit.id, bc.UnitType.Mage)
+                    print('produced a mage!')
 #producing healers
                 elif gc.can_produce_robot(unit.id, bc.UnitType.Healer) and len(ark_angels)<4:
-                        gc.produce_robot(unit.id, bc.UnitType.Healer)
-                        print('produced a healer!')
+                    gc.produce_robot(unit.id, bc.UnitType.Healer)
+                    print('produced a healer!')
             ### Healers ###
             if  unit.unit_type == bc.UnitType.Healer :
 
@@ -545,10 +582,11 @@ while True:
                             print('literally attacking a thing')
                             break
                         else:
+                            goto_rocket(unit)
                             continue
 
-                    if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(bc.MapLocation(bc.Planet.Earth, unit.location.map_location().x, enemy_edge.y))!= bc.Direction.Center :
-                            fuzzygoto(unit, bc.MapLocation(bc.Planet.Earth, unit.location.map_location().x, enemy_edge.y))
+                    #if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(bc.MapLocation(bc.Planet.Earth, unit.location.map_location().x, enemy_edge.y))!= bc.Direction.Center :
+                    #        fuzzygoto(unit, bc.MapLocation(bc.Planet.Earth, unit.location.map_location().x, enemy_edge.y))
 
     except Exception as e:
         print('Error:', e)
