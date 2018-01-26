@@ -16,7 +16,7 @@ tryRotate = [0,-1,-7,-2,-6,-3,-5]
 #variablles for workers
 earthMap =  gc.starting_map(bc.Planet.Earth)
 centre= bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height)//2)
-
+unit_needing_backup=[]
 mining =  True
 enemy_sensed=False
 born_to_mine = []
@@ -26,11 +26,12 @@ workers = []
 dukan = [] #for factories
 legion_of_knights=[] #for knights
 #variables for rangers
+number_enemy_sensed=[]
 enemy_sensed=False
 amadhya=[]
 the_lone_ranger=[]
 got_to_enemy_start=False
-the_neighborhood_watch=[]
+the_nights_watch=[]
 mages=[]
 pants=[]
 maploc=[]
@@ -38,8 +39,7 @@ mars_maploc=[]
 marsMap = gc.starting_map(bc.Planet.Mars)
 enemy_edge = bc.MapLocation(bc.Planet.Earth,(earthMap.width)//2,(earthMap.height))
 print("TestStarter")
-factory_number=0
-
+ark_angels=[]
 random.seed(1047)
 
 ## A list of all passable locations on mars ## #what does this do
@@ -62,6 +62,16 @@ gc.queue_research(bc.UnitType.Knight)
 
 my_team = gc.team()
 print(my_team)
+def does_it_need_backup(close_by,unit):
+    for junta in close_by:
+        if junta.team!=my_team:
+            number_enemy_sensed.append(junta.id)
+    if len(number_enemy_sensed)>2:
+        backup=True
+    else:
+        backup=False
+
+
 def knights_job(unit):
     if location.is_on_map():
         close_by = gc.sense_nearby_units(location.map_location(),2)
@@ -77,9 +87,20 @@ def knights_job(unit):
         if unit.health==0:
             legion_of_knights.remove(unit.id)
 def rangers_job(unit,got_to_enemy_start,enemy_sensed):
+    backup=False
     dont_move=False
     if location.is_on_map():
         close_by_for_ranger= gc.sense_nearby_units(location.map_location(),70)
+
+        backup=does_it_need_backup(close_by_for_ranger,unit)
+
+#manipulate lists containing units needing backup
+        if unit in unit_needing_backup and backup==False:
+            unit_needing_backup.remove(unit)
+        elif not unit in unit_needing_backup and backup==True:
+            unit_needing_backup.append(unit)
+
+
         for junta in close_by_for_ranger:
             if not junta:
                 dont_move=False
@@ -93,23 +114,14 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
                 print('junta.health', junta.health)
 
                 break
-            elif not gc.can_attack(unit.id,junta.id) and unit.id in the_neighborhood_watch and junta.team !=my_team:
-                enemy_sensed=True
-                continue
-#adding to lone ranger
-        if not unit.id in the_lone_ranger and len(the_lone_ranger)==0:
-            the_lone_ranger.append(unit.id)
 
-        if unit.id in the_lone_ranger and dont_move==False:
-            print('moved')
-            the_lone_ranger_job(unit,got_to_enemy_start)
+        if not unit in the_nights_watch and len(the_nights_watch)<3:
+            the_nights_watch.append(unit)
 
+        if unit_needing_backup:
 
-def the_lone_ranger_job(unit,got_to_enemy_start):
-    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(centre)!= bc.Direction.Center and got_to_enemy_start==False :
-            fuzzygoto(unit,centre)
-    if location.map_location().distance_squared_to(enemy_start)<20:
-        got_to_enemy_start=True
+            fuzzygoto(unit,unit_needing_backup[0].location.map_location())
+
 
 def invert(loc):
     newx=earthMap.width-loc.x
@@ -290,37 +302,38 @@ while True:
                             else:
                                 mining = True
 
+                            if gc.planet()==bc.Planet.Earth and unit.location.map_location().direction_to(enemy_edge)!=bc.Direction.Center:
+                                direction_to_start_node=unit.location.map_location().direction_to(enemy_edge)
+                                ind_for_this=directions.index(direction_to_start_node)
+                                print("got here")
+                                i=0
+                                for tilt in  tryRotate:
+                                    d = rotate(directions[ind_for_this - 4],tilt)
+                                    if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
+                                        if pos == 'Top' or pos == 'Bottom':
+                                            if location.map_location().y != our_border.y:
+                                                gc.move_robot(unit.id,d)
+                                                break
+                                        elif pos == 'Left' or pos == 'Right':
+                                            if location.map_location().x != our_border.x:
+                                                gc.move_robot(unit.id,d)
+                                                break
 
-                            direction_to_start_node=unit.location.map_location().direction_to(enemy_edge)
-                            ind_for_this=directions.index(direction_to_start_node)
-                            i=0
-                            for tilt in  tryRotate:
-                                d = rotate(directions[ind_for_this - 4],tilt)
-                                if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
-                                    if pos == 'Top' or pos == 'Bottom':
-                                        if location.map_location().y != our_border.y:
-                                            gc.move_robot(unit.id,d)
-                                            break
-                                    elif pos == 'Left' or pos == 'Right':
-                                        if location.map_location().x != our_border.x:
-                                            gc.move_robot(unit.id,d)
-                                            break
-
-                                    if location.is_on_map():
-                                        nearby = gc.sense_nearby_units(location.map_location(), 2)
-                                        for other in nearby:
-                                            if other.unit_type == bc.UnitType.Factory:
-                                                if other.structure_is_built() and not other.id in dukan:
-                                                    continue
-                                                elif gc.can_build(unit.id,other.id):
-                                                    gc.build(unit.id, other.id)
-                                                elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
-                                                     gc.repair(unit.id,other.id)
-                                            if other.unit_type == bc.UnitType.Rocket:
-                                                if other.structure_is_built() and not other.id in pants:
-                                                    continue
-                                                elif gc.can_build(unit.id, other.id):
-                                                    gc.build(unit.id, other.id)
+                                        if location.is_on_map():
+                                            nearby = gc.sense_nearby_units(location.map_location(), 2)
+                                            for other in nearby:
+                                                if other.unit_type == bc.UnitType.Factory:
+                                                    if other.structure_is_built() and not other.id in dukan:
+                                                        continue
+                                                    elif gc.can_build(unit.id,other.id):
+                                                        gc.build(unit.id, other.id)
+                                                    elif gc.can_repair(unit.id,other.id) and other.health<other.max_health:
+                                                         gc.repair(unit.id,other.id)
+                                                if other.unit_type == bc.UnitType.Rocket:
+                                                    if other.structure_is_built() and not other.id in pants:
+                                                        continue
+                                                    elif gc.can_build(unit.id, other.id):
+                                                        gc.build(unit.id, other.id)
 
     # Workers in Born_to_build
                     else:
@@ -387,21 +400,27 @@ while True:
                         if gc.can_unload(unit.id,d):
                             gc.unload(unit.id,d)
 #producing knights
-                elif gc.can_produce_robot(unit.id, bc.UnitType.Knight) and len(legion_of_knights)<5 and (enemy_sensed==True or got_to_enemy_start==True):
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Knight) and len(legion_of_knights)<5:
                     gc.produce_robot(unit.id, bc.UnitType.Knight)
                     print('produced a knight!')
 #producing rangers
-                elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):
-                    if (enemy_sensed==False and got_to_enemy_start==False) and len(amadhya)<5:
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger) and len(amadhya)<5:
                         gc.produce_robot(unit.id, bc.UnitType.Ranger)
                         print('produced a ranger!')
-                    elif (enemy_sensed==True or got_to_enemy_start==True) and len(amadhya)<7:
-                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
-                        print('produced a ranger!')
+
 
                 elif gc.can_produce_robot(unit.id, bc.UnitType.Mage) and len(mages)<4:
                         gc.produce_robot(unit.id, bc.UnitType.Mage)
                         print('produced a mage!')
+
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Healer) and len(ark_angels)<4:
+                        gc.produce_robot(unit.id, bc.UnitType.Healer)
+                        print('produced a healer!')
+
+            if  unit.unit_type == bc.UnitType.Healer :
+
+                if not unit in ark_angels :
+                    ark_angels.append(unit)        
 
             if  unit.unit_type == bc.UnitType.Knight :
 
