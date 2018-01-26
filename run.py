@@ -106,8 +106,8 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
 
 
 def the_lone_ranger_job(unit,got_to_enemy_start):
-    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(enemy_start)!= bc.Direction.Center and got_to_enemy_start==False :
-            fuzzygoto(unit,enemy_start)
+    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(centre)!= bc.Direction.Center and got_to_enemy_start==False :
+            fuzzygoto(unit,centre)
     if location.map_location().distance_squared_to(enemy_start)<20:
         got_to_enemy_start=True
 
@@ -284,27 +284,27 @@ while True:
                     if unit.id in born_to_mine:
                         mining = Karbonite_Mining(unit.id,directions,unit,mining)
                         if mining == False:
-                                born_to_mine.remove(unit.id)
-                                if len(born_to_mine) == 0:
-                                    mining = False
-                                else:
-                                    mining = True
+                            born_to_mine.remove(unit.id)
+                            if len(born_to_mine) == 0:
+                                mining = False
+                            else:
+                                mining = True
 
-                                if mining == False:
-                                    direction_to_start_node=unit.location.map_location().direction_to(enemy_edge)
-                                    ind_for_this=directions.index(direction_to_start_node)
-                                    i=0
-                                    for tilt in  tryRotate:
-                                        d = rotate(directions[ind_for_this - 4],tilt)
-                                        if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
-                                            if pos == 'Top' or pos == 'Bottom':
-                                                if location.map_location().y != our_border.y:
-                                                    gc.move_robot(unit.id,d)
-                                                    break
-                                            elif pos == 'Left' or pos == 'Right':
-                                                if location.map_location().x != our_border.x:
-                                                    gc.move_robot(unit.id,d)
-                                                    break
+
+                            direction_to_start_node=unit.location.map_location().direction_to(enemy_edge)
+                            ind_for_this=directions.index(direction_to_start_node)
+                            i=0
+                            for tilt in  tryRotate:
+                                d = rotate(directions[ind_for_this - 4],tilt)
+                                if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
+                                    if pos == 'Top' or pos == 'Bottom':
+                                        if location.map_location().y != our_border.y:
+                                            gc.move_robot(unit.id,d)
+                                            break
+                                    elif pos == 'Left' or pos == 'Right':
+                                        if location.map_location().x != our_border.x:
+                                            gc.move_robot(unit.id,d)
+                                            break
 
                                     if location.is_on_map():
                                         nearby = gc.sense_nearby_units(location.map_location(), 2)
