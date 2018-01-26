@@ -42,6 +42,12 @@ print("TestStarter")
 ark_angels=[]
 random.seed(1047)
 temp = []
+loaded_workers = 0
+miners_on_mars = []
+miners_on_mars_loc = []
+amadhya_on_mars = []
+rocket_locs = [] # initial locations of rockets on earth
+
 ## A list of all passable locations on mars ## #what does this do
 i = 0
 while i< marsMap.width:
@@ -63,6 +69,7 @@ gc.queue_research(bc.UnitType.Knight)
 my_team = gc.team()
 print(my_team)
 def does_it_need_backup(close_by,unit):
+    number_enemy_sensed[:]=[]
     for junta in close_by:
         if junta.team!=my_team:
             number_enemy_sensed.append(junta.id)
@@ -87,40 +94,56 @@ def knights_job(unit):
         if unit.health==0:
             legion_of_knights.remove(unit.id)
 def rangers_job(unit,got_to_enemy_start,enemy_sensed):
+    if location.is_on_planet(bc.Planet.Earth):
+        if location.is_on_map():
+            if amadhya.index(unit.id) == 0:
+                if pos == 'Top' or pos == 'Bottom':
+                    if location.map_location().y != corner1.y:
+                        if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner1) != bc.Direction.Center:
+                            fuzzygoto(unit,corner1)
+                elif pos == 'Left' or pos == 'Right':
+                    if location.map_location().x != corner1.x:
+                        if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner1) != bc.Direction.Center:
+                            fuzzygoto(unit,corner1)
 
-    if location.is_on_map():
-        if amadhya.index(unit.id) == 0:
-            if pos == 'Top' or pos == 'Bottom':
-                if location.map_location().y != corner1.y:
-                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner1) != bc.Direction.Center:
-                        fuzzygoto(unit,corner1)
-            elif pos == 'Left' or pos == 'Right':
-                if location.map_location().x != corner1.x:
-                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner1) != bc.Direction.Center:
-                        fuzzygoto(unit,corner1)
+            elif amadhya.index(unit.id) == 1:
+                if pos == 'Top' or pos == 'Bottom':
+                    if location.map_location().y != corner2.y:
+                        if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner2) != bc.Direction.Center:
+                            fuzzygoto(unit,corner2)
 
-        elif amadhya.index(unit.id) == 1:
-            if pos == 'Top' or pos == 'Bottom':
-                if location.map_location().y != corner2.y:
-                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner2) != bc.Direction.Center:
-                        fuzzygoto(unit,corner2)
+                elif pos == 'Left' or pos == 'Right':
+                    if location.map_location().x != corner2.x:
+                        if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner2) != bc.Direction.Center:
+                            fuzzygoto(unit,corner2)
 
-            elif pos == 'Left' or pos == 'Right':
-                if location.map_location().x != corner2.x:
-                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner2) != bc.Direction.Center:
-                        fuzzygoto(unit,corner2)
+            elif amadhya.index(unit.id) == 2:
+                if pos == 'Top' or pos == 'Bottom':
+                    if location.map_location().y != corner3.y:
+                        if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner3) != bc.Direction.Center:
+                            fuzzygoto(unit,corner3)
 
-        elif amadhya.index(unit.id) == 2:
-            if pos == 'Top' or pos == 'Bottom':
-                if location.map_location().y != corner3.y:
-                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner3) != bc.Direction.Center:
-                        fuzzygoto(unit,corner3)
+                elif pos == 'Left' or pos == 'Right':
+                    if location.map_location().x != corner3.x:
+                        if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner3) != bc.Direction.Center:
+                            fuzzygoto(unit,corner3)
 
-            elif pos == 'Left' or pos == 'Right':
-                if location.map_location().x != corner3.x:
-                    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner3) != bc.Direction.Center:
-                        fuzzygoto(unit,corner3)
+            elif amadhya.index(unit.id) > 2:
+                prev_dist = sys.maxsize
+                for loc in rocket_locs:
+                    dist = unit.location.map_location().distance_squared_to(loc)
+                    if dist < prev_dist:
+                        prev_dist = dist
+                        goto_loc = loc
+                if gc.is_move_ready(unit.id):
+                    fuzzygoto(unit,goto_loc)
 
+    elif location.is_on_planet(bc.Planet.Mars):
+        if unit.id not in amadhya_on_mars and len(amadhya_on_mars) < 5:
+            amadhya_on_mars.append(unit.id)
+        if unit.id in amadhya_on_mars:
+            ind = amadhya_on_mars.index(unit.id)
+            fuzzygoto(unit,miners_on_mars_loc[ind])
 
     backup=False
     dont_move=False
@@ -130,10 +153,11 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
         backup=does_it_need_backup(close_by_for_ranger,unit)
 
 #manipulate lists containing units needing backup
-        if unit in unit_needing_backup and backup==False:
-            unit_needing_backup.remove(unit)
+        if unit.location.map_location() in unit_needing_backup and backup==False:
+            unit_needing_backup.remove(unit.location.map_location())
+            print('removed backup point')
         elif not unit in unit_needing_backup and backup==True:
-            unit_needing_backup.append(unit)
+            unit_needing_backup.append(unit.location.map_location())
 
 
         for junta in close_by_for_ranger:
@@ -156,7 +180,6 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
         if unit_needing_backup:
 
             fuzzygoto(unit,unit_needing_backup[0].location.map_location())
-
 
 def invert(loc):
     newx=earthMap.width-loc.x
@@ -263,16 +286,12 @@ while True:
                 enemy_start=invert(start_node)
             ### Workers ###
             if unit.unit_type == bc.UnitType.Worker :
+                if location.is_in_garrison():
+                    continue
+
                 if location.is_on_map():
                     if unit.id not in workers:
                         workers.append(unit.id)
-
-                if location.is_in_garrison():
-                    rocket_id = location.structure()
-                    for d in directions:
-                        if gc.can_unload(rocket_id,d):
-                            gc.unload(rocket_id,d)
-                            gc.disintegrate_unit(rocket_id)
 
     # Append in Born_to_mine
                     if gc.round()==1:
@@ -343,13 +362,6 @@ while True:
                     if not unit.id in born_to_mine and not unit.id in born_to_build:
                         born_to_mine.append(unit.id)
 
-                    if location.is_in_garrison():
-                        rocket_id = location.structure()
-                        for d in directions:
-                            if gc.can_unload(rocket_id,d):
-                                gc.unload(rocket_id,d)
-                                gc.disintegrate_unit(rocket_id)
-
                     if len(workers) < 20 and (gc.round())%5 == 0: # continue replication till sufficient
                         for d in directions:
                             if gc.can_replicate(unit.id,d):
@@ -374,6 +386,14 @@ while True:
                                     if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
                                         gc.move_robot(unit.id,d)
                                         break
+
+                                if location.is_on_planet(bc.Planet.Mars):
+                                    if unit.id not in miners_on_mars and len(miners_on_mars) < 5:
+                                        miners_on_mars.append(unit.id)
+                                        miners_on_mars_loc.append(location.map_location())
+                                    elif unit.id in miners_on_mars:
+                                        ind = miners_on_mars.index(unit.id)
+                                        miners_on_mars_loc[ind] = location.map_location()
 #miners need work
                                 if location.is_on_map():
                                     nearby = gc.sense_nearby_units(location.map_location(), 2)
@@ -390,6 +410,7 @@ while True:
                                                 continue
                                             elif gc.can_build(unit.id, other.id):
                                                 gc.build(unit.id, other.id)
+                                                rocket_locs.append(other.location.map_location())
 
     # Workers in Born_to_build
                     else:
@@ -414,6 +435,7 @@ while True:
                                         continue
                                     elif gc.can_build(unit.id, other.id):
                                         gc.build(unit.id, other.id)
+                                        rocket_locs.append(other.location.map_location())
                             if gc.karbonite() > 100 and len(pants)<4:
                                 lay_blueprint(unit.id, bc.UnitType.Rocket)
                             if gc.karbonite() > 200 and len(dukan)<8:
@@ -426,13 +448,30 @@ while True:
                 if unit.health == 0:
                     pants.remove(unit.id)
                 garrison = unit.structure_garrison()
-                if len(garrison) == 0:
-                    nearby = gc.sense_nearby_units(location.map_location(),2)
-                    for robot in nearby:
-                        if gc.is_move_ready(robot.id) and gc.can_load(unit.id, robot.id):
-                            gc.load(unit.id, robot.id)
-                            print('unit has been loaded!')
-                elif len(garrison) != 0:
+                if len(garrison) < 5:
+                    if location.is_on_planet(bc.Planet.Earth):
+                        nearby_ranger = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Ranger)
+                        #nearby_knight = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Knight)
+                        #nearby_mage = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Mage)
+                        nearby_worker = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Worker)
+                        #nearby_healer = gc.sense_nearby_units_by_type(location.map_location(),2,bc.UnitType.Healer)
+                        for robot in nearby_ranger:
+                            if gc.is_move_ready(robot.id) and gc.can_load(unit.id, robot.id):
+                                gc.load(unit.id, robot.id)
+                                print('ranger has been loaded!')
+                        for robot in nearby_worker:
+                            if gc.is_move_ready(robot.id) and gc.can_load(unit.id, robot.id) and loaded_workers<2:
+                                gc.load(unit.id, robot.id)
+                                loaded_workers += 1
+                                print('worker has been loaded!')
+                    elif location.is_on_planet(bc.Planet.Mars):
+                        if len(garrison) == 0:
+                            gc.disintegrate_unit(unit.id)
+                        elif len(garrison) != 0:
+                            for d in directions:
+                                if gc.can_unload(unit.id,d):
+                                    gc.unload(unit.id,d)
+                elif len(garrison) == 5:
                     if location.is_on_planet(bc.Planet.Earth) and gc.current_duration_of_flight()<100:
                         for land in mars_maploc:
                             if gc.has_unit_at_location(land) == False and gc.can_launch_rocket(unit.id, land):
@@ -440,7 +479,6 @@ while True:
                                 gc.launch_rocket(unit.id, land)
                                 print('a rocket has been launched!')
                     elif location.is_on_planet(bc.Planet.Mars):
-                        print("I'm on Mars!")
                         for d in directions:
                             if gc.can_unload(unit.id,d):
                                 gc.unload(unit.id,d)
@@ -461,9 +499,9 @@ while True:
                     gc.produce_robot(unit.id, bc.UnitType.Knight)
                     print('produced a knight!')
 #producing rangers
-                elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger) and len(amadhya)<5:
-                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
-                        print('produced a ranger!')
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger) and len(amadhya)<10:
+                                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                                        print('produced a ranger!')
 
 #producing mages
                 elif gc.can_produce_robot(unit.id, bc.UnitType.Mage) and len(mages)<4:
@@ -498,7 +536,6 @@ while True:
 
                 if not unit.id in mages:
                     mages.append(unit.id)
-                    print(len(mages))
 
                 if location.is_on_map():
                     close_by = gc.sense_nearby_units(location.map_location(), 30)
