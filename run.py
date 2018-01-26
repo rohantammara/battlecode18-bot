@@ -29,7 +29,6 @@ legion_of_knights=[] #for knights
 number_enemy_sensed=[]
 enemy_sensed=False
 amadhya=[]
-the_lone_ranger=[]
 got_to_enemy_start=False
 the_nights_watch=[]
 mages=[]
@@ -62,7 +61,9 @@ gc.queue_research(bc.UnitType.Knight)
 
 my_team = gc.team()
 print(my_team)
-def does_it_need_backup(close_by,unit):
+def does_it_need_backup(close_by,unit,backup):
+
+    number_enemy_sensed[:]=[]
     for junta in close_by:
         if junta.team!=my_team:
             number_enemy_sensed.append(junta.id)
@@ -70,6 +71,7 @@ def does_it_need_backup(close_by,unit):
         backup=True
     else:
         backup=False
+    return backup
 
 
 def knights_job(unit):
@@ -90,6 +92,7 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
 
     if location.is_on_map():
         if amadhya.index(unit.id) == 0:
+            the_nights_watch.append(unit.id)
             if pos == 'Top' or pos == 'Bottom':
                 if location.map_location().y != corner1.y:
                     if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner1) != bc.Direction.Center:
@@ -100,6 +103,7 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
                         fuzzygoto(unit,corner1)
 
         elif amadhya.index(unit.id) == 1:
+            the_nights_watch.append(unit.id)
             if pos == 'Top' or pos == 'Bottom':
                 if location.map_location().y != corner2.y:
                     if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner2) != bc.Direction.Center:
@@ -111,6 +115,7 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
                         fuzzygoto(unit,corner2)
 
         elif amadhya.index(unit.id) == 2:
+            the_nights_watch.append(unit.id)
             if pos == 'Top' or pos == 'Bottom':
                 if location.map_location().y != corner3.y:
                     if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(corner3) != bc.Direction.Center:
@@ -127,13 +132,15 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
     if location.is_on_map():
         close_by_for_ranger= gc.sense_nearby_units(location.map_location(),70)
 
-        backup=does_it_need_backup(close_by_for_ranger,unit)
+        backup=does_it_need_backup(close_by_for_ranger,unit,backup)
 
 #manipulate lists containing units needing backup
-        if unit in unit_needing_backup and backup==False:
-            unit_needing_backup.remove(unit)
-        elif not unit in unit_needing_backup and backup==True:
-            unit_needing_backup.append(unit)
+        if unit.location.map_location() in unit_needing_backup and backup==False:
+            unit_needing_backup.remove(unit.location.map_location())
+            print("removed backup pount")
+
+        elif not unit.location.map_location() in unit_needing_backup and backup==True:
+            unit_needing_backup.append(unit.location.map_location())
 
 
         for junta in close_by_for_ranger:
@@ -141,7 +148,7 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
                 dont_move=False
             elif junta.team!=my_team and unit.location.map_location().is_within_range(50,junta.location.map_location()):
                 dont_move=True
-            if junta.team !=my_team and  gc.is_attack_ready(unit.id) and gc.can_attack(unit.id,junta.id) :
+            if junta.team !=my_team and  gc.is_attack_ready(unit.id) and gc.can_attack(unit.id,junta.id) and gc.round()>300 :
                 #print("attacking a thing")
                 current_junta_health=junta.health
                 print('junta.id',junta.id)
@@ -150,12 +157,11 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
 
                 break
 
-        if not unit in the_nights_watch and len(the_nights_watch)<3:
-            the_nights_watch.append(unit)
 
-        if unit_needing_backup:
 
-            fuzzygoto(unit,unit_needing_backup[0].location.map_location())
+        if unit_needing_backup and not unit.id in the_nights_watch and gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(unit_needing_backup[0])!=bc.Direction.Center:
+
+            fuzzygoto(unit,unit_needing_backup[0])
 
 
 def invert(loc):
@@ -364,7 +370,7 @@ while True:
                             if gc.planet()==bc.Planet.Earth and unit.location.map_location().direction_to(enemy_edge)!=bc.Direction.Center:
                                 direction_to_start_node=unit.location.map_location().direction_to(enemy_edge)
                                 ind_for_this=directions.index(direction_to_start_node)
-                                print("got here")
+
                                 i=0
                                 for tilt in  tryRotate:
                                     d = rotate(directions[ind_for_this - 4],tilt)
@@ -457,7 +463,7 @@ while True:
                     gc.produce_robot(unit.id, bc.UnitType.Knight)
                     print('produced a knight!')
 #producing rangers
-                elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger) and len(amadhya)<5:
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger) and len(amadhya)<10:
                         gc.produce_robot(unit.id, bc.UnitType.Ranger)
                         print('produced a ranger!')
 
