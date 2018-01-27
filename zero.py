@@ -160,10 +160,6 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
     elif location.is_on_planet(bc.Planet.Mars):
         if unit.id not in amadhya_on_mars and len(amadhya_on_mars) < 5:
             amadhya_on_mars.append(unit.id)
-        if unit.id in amadhya_on_mars and unit.location.map_location().direction_to(miners_on_mars_loc[ind]) != bc.Direction.Center:
-            ind = amadhya_on_mars.index(unit.id)
-            fuzzygoto(unit,miners_on_mars_loc[ind])
-
 
     backup=False
     dont_move=False
@@ -508,7 +504,8 @@ while True:
                                     gc.unload(unit.id,d)
                                 for bot in gc.sense_nearby_units(location.map_location(),2):
                                     direction_to_start_node=bot.location.map_location().direction_to(location.map_location())
-                                    ind_for_this=directions.index(direction_to_start_node)
+                                    if direction_to_start_node != bc.Direction.Center:
+                                        ind_for_this=directions.index(direction_to_start_node)
                                     i=0
                                     for tilt in tryRotate:
                                         d = rotate(directions[ind_for_this - 4],tilt)
