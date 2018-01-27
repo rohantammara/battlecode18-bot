@@ -81,7 +81,7 @@ def goto_rocket(unit):
         if dist < prev_dist:
             prev_dist = dist
             goto_loc = loc
-    if gc.is_move_ready(unit.id):
+    if gc.is_move_ready(unit.id) and unit.location.map_location().direction_to(goto_loc) != bc.Direction.Center:
         fuzzygoto(unit,goto_loc)
 
 def does_it_need_backup(close_by,unit):
@@ -95,8 +95,18 @@ def does_it_need_backup(close_by,unit):
         backup=False
 
 def knights_job(unit):
+    backup=False
     if location.is_on_map():
         close_by = gc.sense_nearby_units(location.map_location(),2)
+        backup=does_it_need_backup(close_by,unit)
+
+#manipulate lists containing units needing backup
+        if unit.location.map_location() in unit_needing_backup and backup==False:
+            unit_needing_backup.remove(unit.location.map_location())
+            print('removed backup point')
+        elif not unit in unit_needing_backup and backup==True:
+            unit_needing_backup.append(unit.location.map_location())
+
         for enemy in close_by:
             if enemy.team != my_team and gc.is_attack_ready(unit.id) and gc.can_attack(unit.id,enemy.id) :
                 print("attacking a thing")
@@ -150,20 +160,15 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
     elif location.is_on_planet(bc.Planet.Mars):
         if unit.id not in amadhya_on_mars and len(amadhya_on_mars) < 5:
             amadhya_on_mars.append(unit.id)
-        if unit.id in amadhya_on_mars:
+        if unit.id in amadhya_on_mars and unit.location.map_location().direction_to(miners_on_mars_loc[ind]) != bc.Direction.Center:
             ind = amadhya_on_mars.index(unit.id)
             fuzzygoto(unit,miners_on_mars_loc[ind])
-        nearby_rockets = gc.sense_nearby_units_by_type(location,2,bc.UnitType.Rocket)
-        if len(nearby_rockets) != 0:
-            for d in directions:
-                if gc.is_move_ready(unit.id) and gc.can_move(unit.id,d):
-                    gc.move(unit.id,d)
+
 
     backup=False
     dont_move=False
     if location.is_on_map():
         close_by_for_ranger= gc.sense_nearby_units(location.map_location(),70)
-
         backup=does_it_need_backup(close_by_for_ranger,unit)
 
 #manipulate lists containing units needing backup
@@ -172,7 +177,6 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
             print('removed backup point')
         elif not unit in unit_needing_backup and backup==True:
             unit_needing_backup.append(unit.location.map_location())
-
 
         for junta in close_by_for_ranger:
             if not junta:
@@ -191,7 +195,7 @@ def rangers_job(unit,got_to_enemy_start,enemy_sensed):
         if not unit in the_nights_watch and len(the_nights_watch)<3:
             the_nights_watch.append(unit)
 
-        if unit_needing_backup:
+        if unit_needing_backup and unit.location.map_location().direction_to(unit_needing_backup[0].location.map_location()) != bc.Direction.Center:
 
             fuzzygoto(unit,unit_needing_backup[0].location.map_location())
 
@@ -393,9 +397,8 @@ while True:
                             if gc.planet()==bc.Planet.Earth and unit.location.map_location().direction_to(enemy_edge)!=bc.Direction.Center:
                                 direction_to_start_node=unit.location.map_location().direction_to(enemy_edge)
                                 ind_for_this=directions.index(direction_to_start_node)
-                                print("got here")
                                 i=0
-                                for tilt in  tryRotate:
+                                for tilt in tryRotate:
                                     d = rotate(directions[ind_for_this - 4],tilt)
                                     if gc.can_move(unit.id,d) and gc.is_move_ready(unit.id):
                                         gc.move_robot(unit.id,d)
@@ -497,11 +500,22 @@ while True:
                                     print('knight has been loaded!')
                     elif location.is_on_planet(bc.Planet.Mars):
                         if len(garrison) == 0:
+                            pants.remove(unit.id)
                             gc.disintegrate_unit(unit.id)
                         elif len(garrison) != 0:
                             for d in directions:
                                 if gc.can_unload(unit.id,d):
                                     gc.unload(unit.id,d)
+                                for bot in gc.sense_nearby_units(location.map_location(),2):
+                                    direction_to_start_node=bot.location.map_location().direction_to(location.map_location())
+                                    ind_for_this=directions.index(direction_to_start_node)
+                                    i=0
+                                    for tilt in tryRotate:
+                                        d = rotate(directions[ind_for_this - 4],tilt)
+                                        if gc.can_move(bot.id,d) and gc.is_move_ready(bot.id):
+                                            gc.move_robot(bot.id,d)
+                                            break
+
                 elif len(garrison) == 8:
                     if location.is_on_planet(bc.Planet.Earth) and gc.current_duration_of_flight()<100:
                         for land in mars_maploc:
@@ -511,8 +525,6 @@ while True:
                                     for d in directions:
                                         if robot.unit_type != bc.UnitType.Factory and gc.is_move_ready(robot.id) and gc.can_move(robot.id,d):
                                             gc.move_robot(robot.id,d)
-                                        else:
-                                            continue
                                 gc.launch_rocket(unit.id, land)
                                 print('a rocket has been launched!')
                     elif location.is_on_planet(bc.Planet.Mars):
@@ -532,7 +544,7 @@ while True:
                         if gc.can_unload(unit.id,d):
                             gc.unload(unit.id,d)
 #producing knights
-                elif gc.can_produce_robot(unit.id, bc.UnitType.Knight) and len(legion_of_knights)<5:
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Knight) and len(legion_of_knights)<10:
                     gc.produce_robot(unit.id, bc.UnitType.Knight)
                     print('produced a knight!')
 #producing rangers
@@ -541,7 +553,7 @@ while True:
                     print('produced a ranger!')
 
 #producing mages
-                elif gc.can_produce_robot(unit.id, bc.UnitType.Mage) and len(mages)<4:
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Mage) and len(mages)<6:
                     gc.produce_robot(unit.id, bc.UnitType.Mage)
                     print('produced a mage!')
 #producing healers
@@ -553,6 +565,11 @@ while True:
 
                 if not unit in ark_angels :
                     ark_angels.append(unit)
+
+                if location.is_on_map():
+                    for bot in gc.sense_nearby_units(location.map_location(),30):
+                        if bot.health<bot.max_health and gc.can_heal(unit.id,bot.id) and gc.is_heal_ready(unit.id) and bot.team == my_team:
+                            gc.heal(unit.id,bot.id)
             ### Knights ###
             if  unit.unit_type == bc.UnitType.Knight :
 
@@ -575,7 +592,16 @@ while True:
                     mages.append(unit.id)
 
                 if location.is_on_map():
+                    backup=False
                     close_by = gc.sense_nearby_units(location.map_location(), 30)
+                    backup=does_it_need_backup(close_by,unit)
+
+            #manipulate lists containing units needing backup
+                    if unit.location.map_location() in unit_needing_backup and backup==False:
+                        unit_needing_backup.remove(unit.location.map_location())
+                        print('removed backup point')
+                    elif not unit in unit_needing_backup and backup==True:
+                        unit_needing_backup.append(unit.location.map_location())
                     for athing in close_by:
                         if athing.team != my_team and gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, athing.id):
                             gc.attack(unit.id, athing.id)
